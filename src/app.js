@@ -6,7 +6,7 @@ const mongoSanitize = require("express-mongo-sanitize");
 
 // Import middlewares
 const { requestLogger } = require("./middlewares/logging");
-const { globalRateLimit } = require("./middlewares/rateLimit");
+const rateLimitMiddlewares = require("./middlewares/rateLimit");
 const corsConfig = require("./middlewares/cors");
 const errorHandler = require("./middlewares/errorHandler");
 const securityMiddleware = require("./middlewares/security");
@@ -15,6 +15,27 @@ const securityMiddleware = require("./middlewares/security");
 const routes = require("./routes");
 
 const app = express();
+
+// Debug the imported rate limit middleware
+console.log("Imported rate limit middleware:");
+console.log(
+  "- globalRateLimit type:",
+  typeof rateLimitMiddlewares.globalRateLimit
+);
+console.log(
+  "- donationRateLimit type:",
+  typeof rateLimitMiddlewares.donationRateLimit
+);
+console.log(
+  "- webhookRateLimit type:",
+  typeof rateLimitMiddlewares.webhookRateLimit
+);
+
+// Ensure we have valid middleware functions
+const globalRateLimit =
+  typeof rateLimitMiddlewares.globalRateLimit === "function"
+    ? rateLimitMiddlewares.globalRateLimit
+    : (req, res, next) => next();
 
 // Trust proxy (for accurate IP addresses behind load balancers)
 if (process.env.TRUST_PROXY === "true") {

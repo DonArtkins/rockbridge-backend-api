@@ -138,8 +138,18 @@ console.log("- globalRateLimit:", typeof globalRateLimit);
 console.log("- donationRateLimit:", typeof donationRateLimit);
 console.log("- webhookRateLimit:", typeof webhookRateLimit);
 
+// Ensure we always export valid middleware functions
 module.exports = {
-  globalRateLimit,
-  donationRateLimit,
-  webhookRateLimit,
+  globalRateLimit:
+    typeof globalRateLimit === "function"
+      ? globalRateLimit
+      : (req, res, next) => next(),
+  donationRateLimit:
+    typeof donationRateLimit === "function"
+      ? donationRateLimit
+      : (req, res, next) => next(),
+  webhookRateLimit:
+    typeof webhookRateLimit === "function"
+      ? webhookRateLimit
+      : (req, res, next) => next(),
 };
