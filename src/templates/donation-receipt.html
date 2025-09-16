@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Donation Receipt - Rockbridge Ministries</title>
+    <!--[if mso]>
+      <noscript>
+        <xml>
+          <o:OfficeDocumentSettings>
+            <o:PixelsPerInch>96</o:PixelsPerInch>
+          </o:OfficeDocumentSettings>
+        </xml>
+      </noscript>
+    <![endif]-->
+    <style>
+      /* Reset styles */
+      body,
+      table,
+      td,
+      p,
+      a,
+      li,
+      blockquote {
+        -webkit-text-size-adjust: 100%;
+        -ms-text-size-adjust: 100%;
+      }
+      table,
+      td {
+        mso-table-lspace: 0pt;
+        mso-table-rspace: 0pt;
+      }
+      img {
+        -ms-interpolation-mode: bicubic;
+      }
+
+      /* Base styles */
+      body {
+        margin: 0 !important;
+        padding: 0 !important;
+        background-color: #f4f4f7;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      }
+
+      .email-wrapper {
+        width: 100%;
+        background-color: #f4f4f7;
+      }
+
+      .email-container {
+        max-width: 600px;
+        margin: 0 auto;
+        background-color: #ffffff;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      }
+
+      /* Header */
+      .header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 30px 20px;
+        text-align: center;
+      }
+
+      .logo {
+        font-size: 28px;
+        font-weight: bold;
+        color: #ffffff;
+        margin-bottom: 10px;
+        text-decoration: none;
+      }
+
+      .header-subtitle {
+        color: #e8eaff;
+        font-size: 16px;
+        margin: 0;
+      }
+
+      /* Content */
+      .content {
+        padding: 40px 30px;
+      }
+
+      .greeting {
+        font-size: 24px;
+        color: #2c3e50;
+        margin-bottom: 20px;
+        font-weight: 600;
+      }
+
+      .message {
+        font-size: 16px;
+        color: #555555;
+        line-height: 1.6;
+        margin-bottom: 30px;
+      }
+
+      /* Receipt details */
+      .receipt-box {
+        background-color: #f8f9fa;
+        border: 2px solid #e9ecef;
+        border-radius: 8px;
+        padding: 25px;
+        margin: 25px 0;
+      }
+
+      .receipt-title {
+        font-size: 20px;
+        color: #2c3e50;
+        margin-bottom: 20px;
+        font-weight: 600;
+        text-align: center;
+        border-bottom: 2px solid #667eea;
+        padding-bottom: 10px;
+      }
+
+      .receipt-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 0;
+        border-bottom: 1px solid #dee2e6;
+      }
+
+      .receipt-row:last-child {
+        border-bottom: none;
+        font-weight: bold;
+        font-size: 18px;
+        color: #667eea;
+      }
+
+      .receipt-label {
+        font-weight: 600;
+        color: #495057;
+      }
+
+      .receipt-value {
+        color: #6c757d;
+        text-align: right;
+      }
+
+      /* Campaign info */
+      .campaign-info {
+        background-color: #fff3cd;
+        border-left: 4px solid #ffc107;
+        padding: 20px;
+        margin: 20px 0;
+      }
+
+      .campaign-title {
+        font-weight: 600;
+        color: #856404;
+        margin-bottom: 10px;
+      }
+
+      /* Footer */
+      .footer {
+        background-color: #2c3e50;
+        padding: 30px 20px;
+        text-align: center;
+        color: #ecf0f1;
+      }
+
+      .footer-text {
+        font-size: 14px;
+        line-height: 1.5;
+        margin: 10px 0;
+      }
+
+      .contact-info {
+        margin: 20px 0;
+        padding: 15px;
+        background-color: #34495e;
+        border-radius: 5px;
+      }
+
+      .social-links {
+        margin-top: 20px;
+      }
+
+      .social-link {
+        display: inline-block;
+        margin: 0 10px;
+        padding: 8px 15px;
+        background-color: #667eea;
+        color: #ffffff;
+        text-decoration: none;
+        border-radius: 4px;
+        font-size: 14px;
+      }
+
+      /* Mobile responsive */
+      @media only screen and (max-width: 480px) {
+        .email-container {
+          width: 100% !important;
+          margin: 0 !important;
+        }
+
+        .content {
+          padding: 25px 20px !important;
+        }
+
+        .receipt-box {
+          padding: 20px 15px !important;
+        }
+
+        .greeting {
+          font-size: 20px !important;
+        }
+
+        .receipt-row {
+          flex-direction: column !important;
+          text-align: left !important;
+        }
+
+        .receipt-value {
+          text-align: left !important;
+          font-weight: bold;
+          margin-top: 5px;
+        }
+
+        .social-link {
+          display: block !important;
+          margin: 5px 0 !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="email-wrapper">
+      <div class="email-container">
+        <!-- Header -->
+        <div class="header">
+          <div class="logo">🙏 {{organizationName}}</div>
+          <p class="header-subtitle">Serving communities with love and faith</p>
+        </div>
+
+        <!-- Content -->
+        <div class="content">
+          <h1 class="greeting">Thank you, {{firstName}}!</h1>
+
+          <p class="message">
+            We are deeply grateful for your generous {{donationType}} of
+            <strong>{{amount}}</strong> to support
+            <strong>{{campaignTitle}}</strong>. Your kindness makes a real
+            difference in the lives of those we serve.
+          </p>
+
+          <!-- Receipt Details -->
+          <div class="receipt-box">
+            <h2 class="receipt-title">📄 Official Receipt</h2>
+
+            <div class="receipt-row">
+              <span class="receipt-label">Receipt Number:</span>
+              <span class="receipt-value">{{receiptNumber}}</span>
+            </div>
+
+            <div class="receipt-row">
+              <span class="receipt-label">Donor Name:</span>
+              <span class="receipt-value">{{fullName}}</span>
+            </div>
+
+            <div class="receipt-row">
+              <span class="receipt-label">Donation Date:</span>
+              <span class="receipt-value">{{donationDate}}</span>
+            </div>
+
+            <div class="receipt-row">
+              <span class="receipt-label">Campaign:</span>
+              <span class="receipt-value">{{campaignTitle}}</span>
+            </div>
+
+            <div class="receipt-row">
+              <span class="receipt-label">Donation Type:</span>
+              <span class="receipt-value">{{donationType}}</span>
+            </div>
+
+            {{#if isRecurring}}
+            <div class="receipt-row">
+              <span class="receipt-label">Frequency:</span>
+              <span class="receipt-value">{{frequency}}</span>
+            </div>
+            {{/if}}
+
+            <div class="receipt-row">
+              <span class="receipt-label">Transaction ID:</span>
+              <span class="receipt-value">{{transactionId}}</span>
+            </div>
+
+            <div class="receipt-row">
+              <span class="receipt-label">Total Amount:</span>
+              <span class="receipt-value">{{amount}}</span>
+            </div>
+          </div>
+
+          <!-- Campaign Information -->
+          <div class="campaign-info">
+            <div class="campaign-title">💝 About {{campaignTitle}}</div>
+            <p style="margin: 0; color: #856404; font-size: 14px">
+              Your contribution directly supports this vital ministry
+              initiative. Thank you for being part of God's work in our
+              community.
+            </p>
+          </div>
+
+          {{#if message}}
+          <div
+            style="
+              background-color: #e8f5e8;
+              border-left: 4px solid #28a745;
+              padding: 15px;
+              margin: 20px 0;
+            "
+          >
+            <p style="margin: 0; color: #155724; font-style: italic">
+              <strong>Your message:</strong> "{{message}}"
+            </p>
+          </div>
+          {{/if}}
+
+          <p class="message">
+            <strong>Important:</strong> Please keep this receipt for your tax
+            records. {{organizationName}} is a registered 501(c)(3) nonprofit
+            organization, and your donation may be tax-deductible.
+          </p>
+
+          <p class="message">
+            If you have any questions about your donation or need additional
+            documentation, please don't hesitate to contact us at
+            <a href="mailto:{{supportEmail}}" style="color: #667eea"
+              >{{supportEmail}}</a
+            >.
+          </p>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+          <div class="contact-info">
+            <p class="footer-text">
+              <strong>{{organizationName}}</strong><br />
+              {{organizationAddress}}<br />
+              Email:
+              <a href="mailto:{{supportEmail}}" style="color: #ecf0f1"
+                >{{supportEmail}}</a
+              >
+            </p>
+          </div>
+
+          <p class="footer-text">
+            "For where your treasure is, there your heart will be also." -
+            Matthew 6:21
+          </p>
+
+          <div class="social-links">
+            <a href="#" class="social-link">Visit Website</a>
+            <a href="#" class="social-link">Newsletter</a>
+            <a href="#" class="social-link">Updates</a>
+          </div>
+
+          <p
+            class="footer-text"
+            style="font-size: 12px; margin-top: 20px; opacity: 0.8"
+          >
+            This is an automated receipt. Please do not reply to this email.<br />
+            © {{currentYear}} {{organizationName}}. All rights reserved.
+          </p>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

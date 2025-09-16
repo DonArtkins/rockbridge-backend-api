@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Thank You - Rockbridge Ministries</title>
+    <!--[if mso]>
+      <noscript>
+        <xml>
+          <o:OfficeDocumentSettings>
+            <o:PixelsPerInch>96</o:PixelsPerInch>
+          </o:OfficeDocumentSettings>
+        </xml>
+      </noscript>
+    <![endif]-->
+    <style>
+      /* Reset styles */
+      body,
+      table,
+      td,
+      p,
+      a,
+      li,
+      blockquote {
+        -webkit-text-size-adjust: 100%;
+        -ms-text-size-adjust: 100%;
+      }
+      table,
+      td {
+        mso-table-lspace: 0pt;
+        mso-table-rspace: 0pt;
+      }
+      img {
+        -ms-interpolation-mode: bicubic;
+      }
+
+      /* Base styles */
+      body {
+        margin: 0 !important;
+        padding: 0 !important;
+        background-color: #f8f9fa;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      }
+
+      .email-wrapper {
+        width: 100%;
+        background-color: #f8f9fa;
+      }
+
+      .email-container {
+        max-width: 600px;
+        margin: 0 auto;
+        background-color: #ffffff;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+        border-radius: 12px;
+        overflow: hidden;
+      }
+
+      /* Header with gradient */
+      .header {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        padding: 40px 30px;
+        text-align: center;
+        position: relative;
+      }
+
+      .header::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="25" cy="25" r="2" fill="white" opacity="0.1"/><circle cx="75" cy="75" r="3" fill="white" opacity="0.1"/><circle cx="50" cy="10" r="1" fill="white" opacity="0.1"/></svg>');
+      }
+
+      .logo {
+        font-size: 32px;
+        font-weight: bold;
+        color: #ffffff;
+        margin-bottom: 15px;
+        text-decoration: none;
+        position: relative;
+        z-index: 1;
+      }
+
+      .header-message {
+        color: #ffffff;
+        font-size: 18px;
+        margin: 0;
+        position: relative;
+        z-index: 1;
+        opacity: 0.95;
+      }
+
+      /* Hero section */
+      .hero {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 50px 30px;
+        text-align: center;
+        color: white;
+      }
+
+      .hero-icon {
+        font-size: 60px;
+        margin-bottom: 20px;
+      }
+
+      .hero-title {
+        font-size: 36px;
+        font-weight: bold;
+        margin-bottom: 15px;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      .hero-subtitle {
+        font-size: 18px;
+        opacity: 0.9;
+        margin: 0;
+      }
+
+      /* Content */
+      .content {
+        padding: 40px 30px;
+      }
+
+      .greeting {
+        font-size: 26px;
+        color: #2c3e50;
+        margin-bottom: 25px;
+        font-weight: 600;
+      }
+
+      .message {
+        font-size: 16px;
+        color: #555555;
+        line-height: 1.7;
+        margin-bottom: 25px;
+      }
+
+      /* Donation highlight */
+      .donation-highlight {
+        background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%);
+        border-radius: 12px;
+        padding: 30px;
+        margin: 30px 0;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .donation-highlight::before {
+        content: "✨";
+        position: absolute;
+        top: -10px;
+        right: -10px;
+        font-size: 40px;
+        opacity: 0.3;
+      }
+
+      .donation-amount {
+        font-size: 32px;
+        font-weight: bold;
+        color: #d63031;
+        margin-bottom: 10px;
+      }
+
+      .donation-campaign {
+        font-size: 18px;
+        color: #2d3436;
+        font-weight: 600;
+        margin-bottom: 10px;
+      }
+
+      .donation-type {
+        font-size: 14px;
+        color: #636e72;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+
+      /* Impact section */
+      .impact-section {
+        background-color: #e8f5e8;
+        border-radius: 12px;
+        padding: 30px;
+        margin: 30px 0;
+        border-left: 5px solid #28a745;
+      }
+
+      .impact-title {
+        font-size: 20px;
+        color: #155724;
+        margin-bottom: 15px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .impact-text {
+        color: #155724;
+        font-size: 16px;
+        line-height: 1.6;
+        margin: 0;
+      }
+
+      /* Message section */
+      .user-message {
+        background-color: #f8f9fa;
+        border-left: 4px solid #6c757d;
+        padding: 20px;
+        margin: 25px 0;
+        border-radius: 0 8px 8px 0;
+      }
+
+      .user-message-title {
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 10px;
+      }
+
+      .user-message-text {
+        color: #6c757d;
+        font-style: italic;
+        margin: 0;
+        font-size: 16px;
+      }
+
+      /* CTA section */
+      .cta-section {
+        background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);
+        border-radius: 12px;
+        padding: 30px;
+        margin: 30px 0;
+        text-align: center;
+        color: white;
+      }
+
+      .cta-title {
+        font-size: 22px;
+        margin-bottom: 15px;
+        font-weight: 600;
+      }
+
+      .cta-text {
+        font-size: 16px;
+        margin-bottom: 20px;
+        opacity: 0.9;
+      }
+
+      .cta-button {
+        display: inline-block;
+        padding: 12px 30px;
+        background-color: #ffffff;
+        color: #0984e3;
+        text-decoration: none;
+        border-radius: 25px;
+        font-weight: bold;
+        font-size: 16px;
+        transition: all 0.3s ease;
+      }
+
+      /* Footer */
+      .footer {
+        background-color: #2c3e50;
+        padding: 40px 30px;
+        color: #ecf0f1;
+      }
+
+      .footer-section {
+        text-align: center;
+        margin-bottom: 30px;
+      }
+
+      .footer-title {
+        font-size: 18px;
+        font-weight: 600;
+        margin-bottom: 15px;
+        color: #ffffff;
+      }
+
+      .footer-text {
+        font-size: 14px;
+        line-height: 1.6;
+        margin: 10px 0;
+        opacity: 0.9;
+      }
+
+      .contact-grid {
+        display: flex;
+        justify-content: space-around;
+        flex-wrap: wrap;
+        margin: 20px 0;
+      }
+
+      .contact-item {
+        text-align: center;
+        margin: 10px;
+        min-width: 120px;
+      }
+
+      .contact-icon {
+        font-size: 24px;
+        margin-bottom: 8px;
+      }
+
+      .social-links {
+        text-align: center;
+        margin: 30px 0;
+      }
+
+      .social-link {
+        display: inline-block;
+        margin: 0 10px;
+        padding: 12px 20px;
+        background-color: #34495e;
+        color: #ffffff;
+        text-decoration: none;
+        border-radius: 6px;
+        font-size: 14px;
+        transition: background-color 0.3s ease;
+      }
+
+      .social-link:hover {
+        background-color: #667eea;
+      }
+
+      .verse {
+        text-align: center;
+        font-style: italic;
+        font-size: 16px;
+        color: #bdc3c7;
+        margin: 20px 0;
+        padding: 20px;
+        border-top: 1px solid #34495e;
+      }
+
+      /* Mobile responsive */
+      @media only screen and (max-width: 480px) {
+        .email-container {
+          margin: 10px !important;
+          border-radius: 8px !important;
+        }
+
+        .header,
+        .hero,
+        .content,
+        .footer {
+          padding: 25px 20px !important;
+        }
+
+        .hero-title {
+          font-size: 28px !important;
+        }
+
+        .hero-icon {
+          font-size: 50px !important;
+        }
+
+        .greeting {
+          font-size: 22px !important;
+        }
+
+        .donation-amount {
+          font-size: 28px !important;
+        }
+
+        .contact-grid {
+          flex-direction: column !important;
+        }
+
+        .social-link {
+          display: block !important;
+          margin: 8px 0 !important;
+        }
+
+        .donation-highlight,
+        .impact-section,
+        .cta-section {
+          margin: 20px 0 !important;
+          padding: 20px !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="email-wrapper">
+      <div class="email-container">
+        <!-- Header -->
+        <div class="header">
+          <div class="logo">🙏 {{organizationName}}</div>
+          <p class="header-message">
+            Transforming lives through faith and service
+          </p>
+        </div>
+
+        <!-- Hero Section -->
+        <div class="hero">
+          <div class="hero-icon">💝</div>
+          <h1 class="hero-title">You Made a Difference!</h1>
+          <p class="hero-subtitle">
+            Your generosity touches hearts and changes lives
+          </p>
+        </div>
+
+        <!-- Content -->
+        <div class="content">
+          <h2 class="greeting">Dear {{firstName}},</h2>
+
+          <p class="message">
+            What an incredible blessing you are! Your heart for giving reflects
+            God's love in action, and we are deeply moved by your generous
+            spirit. Your {{donationType}} donation will directly impact the
+            lives of those we serve in our community.
+          </p>
+
+          <!-- Donation Highlight -->
+          <div class="donation-highlight">
+            <div class="donation-amount">{{amount}}</div>
+            <div class="donation-campaign">{{campaignTitle}}</div>
+            <div class="donation-type">{{donationType}} Donation</div>
+          </div>
+
+          <!-- Impact Section -->
+          <div class="impact-section">
+            <div class="impact-title">
+              <span>🌟</span>
+              <span>Your Impact</span>
+            </div>
+            <p class="impact-text">
+              Through {{campaignTitle}}, your contribution joins with others to
+              create lasting change. Every dollar you've given will be stewarded
+              carefully and used to serve those who need it most. You're not
+              just making a donation – you're investing in hope, healing, and
+              transformation.
+            </p>
+          </div>
+
+          {{#if message}}
+          <div class="user-message">
+            <div class="user-message-title">💬 Your Message</div>
+            <p class="user-message-text">"{{message}}"</p>
+          </div>
+          {{/if}} {{#if isRecurring}}
+          <div
+            style="
+              background-color: #e3f2fd;
+              border-left: 4px solid #2196f3;
+              padding: 20px;
+              margin: 25px 0;
+              border-radius: 0 8px 8px 0;
+            "
+          >
+            <p style="margin: 0; color: #1565c0; font-weight: 600">
+              🔄 <strong>Recurring Donation</strong>
+            </p>
+            <p style="margin: 10px 0 0; color: #1976d2">
+              Thank you for setting up a recurring donation! Your ongoing
+              commitment provides sustainable support for our ministry work.
+              You'll receive a receipt for each donation.
+            </p>
+          </div>
+          {{/if}}
+
+          <p class="message">
+            We believe that God works through generous hearts like yours to
+            accomplish His purposes on earth. Your partnership in ministry means
+            the world to us, and we're honored to be stewards of your trust and
+            generosity.
+          </p>
+
+          <!-- Call to Action -->
+          <div class="cta-section">
+            <h3 class="cta-title">Stay Connected</h3>
+            <p class="cta-text">
+              See how your donation is making an impact and stay updated with
+              our latest ministry news.
+            </p>
+            <a href="{{websiteUrl}}" class="cta-button">Visit Our Website</a>
+          </div>
+
+          <p class="message">
+            <strong>What's Next?</strong> You'll receive an official receipt via
+            email shortly for your tax records. If you have any questions or
+            need additional documentation, please don't hesitate to reach out to
+            us.
+          </p>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+          <div class="footer-section">
+            <h4 class="footer-title">Contact Information</h4>
+            <div class="contact-grid">
+              <div class="contact-item">
+                <div class="contact-icon">📍</div>
+                <div class="footer-text">{{organizationAddress}}</div>
+              </div>
+              <div class="contact-item">
+                <div class="contact-icon">📧</div>
+                <div class="footer-text">
+                  <a
+                    href="mailto:{{supportEmail}}"
+                    style="color: #ecf0f1; text-decoration: none"
+                  >
+                    {{supportEmail}}
+                  </a>
+                </div>
+              </div>
+              <div class="contact-item">
+                <div class="contact-icon">🌐</div>
+                <div class="footer-text">
+                  <a
+                    href="{{websiteUrl}}"
+                    style="color: #ecf0f1; text-decoration: none"
+                  >
+                    Visit Website
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="social-links">
+            <a href="#" class="social-link">📱 Follow Updates</a>
+            <a href="#" class="social-link">📧 Newsletter</a>
+            <a href="#" class="social-link">💬 Connect</a>
+          </div>
+
+          <div class="verse">
+            "Each of you should give what you have decided in your heart to
+            give, not reluctantly or under compulsion, for God loves a cheerful
+            giver."<br />
+            <strong>- 2 Corinthians 9:7</strong>
+          </div>
+
+          <div
+            style="
+              text-align: center;
+              font-size: 12px;
+              opacity: 0.7;
+              margin-top: 30px;
+              border-top: 1px solid #34495e;
+              padding-top: 20px;
+            "
+          >
+            This email was sent with love from {{organizationName}}<br />
+            © {{currentYear}} {{organizationName}}. All rights reserved.<br />
+            You're receiving this because you made a donation to our ministry.
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
