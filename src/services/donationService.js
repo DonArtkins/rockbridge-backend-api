@@ -1,14 +1,14 @@
-const mongoose = require('mongoose');
-const { Donation, Campaign, Donor } = require('../models');
-const { PAYMENT_STATUS } = require('../utils/constants');
-const { generateReceiptNumber } = require('../utils/helpers');
-const logger = require('../utils/logger');
+const mongoose = require("mongoose");
+const { Donation, Campaign, Donor } = require("../models");
+const { PAYMENT_STATUS } = require("../utils/constants");
+const { generateReceiptNumber } = require("../utils/helpers");
+const logger = require("../utils/logger");
 
 class DonationService {
   // Create a new donation
   async createDonation(donationData) {
     const session = await mongoose.startSession();
-    
+
     try {
       return await session.withTransaction(async () => {
         // Create donation record
@@ -42,10 +42,10 @@ class DonationService {
               preferredCurrency: donationData.currency,
             },
           },
-          { 
-            upsert: true, 
-            new: true, 
-            session 
+          {
+            upsert: true,
+            new: true,
+            session,
           }
         );
 
@@ -62,20 +62,79 @@ class DonationService {
         return donation;
       });
     } catch (error) {
-      logger.error('Failed to create donation:', error);
+      logger.error("Failed to create donation:", error);
       throw error;
     } finally {
       await session.endSession();
     }
   }
 
+  // Create recurring donation from webhook
+  async createRecurringDonation(invoiceData) {
+    try {
+      // Find the original subscription to get donor info
+      const existingDonation = await Donation.findOne({
+        stripeSubscriptionId: invoiceData.stripeSubscriptionId,
+      });
+
+      if (!existingDonation) {
+        throw new Error("Original subscription donation not found");
+      }
+
+      const donationData = {
+        donorInfo: existingDonation.donorInfo,
+        campaignId: existingDonation.campaignId,
+        amount: invoiceData.amount,
+        currency: invoiceData.currency,
+        isRecurring: true,
+        recurringFrequency: existingDonation.recurringFrequency,
+        stripeSubscriptionId: invoiceData.stripeSubscriptionId,
+        stripeCustomerId: invoiceData.stripeCustomerId,
+        stripeInvoiceId: invoiceData.stripeInvoiceId,
+        paymentStatus: PAYMENT_STATUS.SUCCEEDED,
+        netAmount: invoiceData.amount, // Assume no fees for simplicity
+        source: "recurring_webhook",
+      };
+
+      return await this.createDonation(donationData);
+    } catch (error) {
+      logger.error("Failed to create recurring donation:", error);
+      throw error;
+    }
+  }
+
+  // Cancel recurring donation
+  async cancelRecurringDonation(subscriptionId) {
+    try {
+      const result = await Donation.updateMany(
+        { stripeSubscriptionId: subscriptionId },
+        {
+          $set: {
+            paymentStatus: "canceled",
+            canceledAt: new Date(),
+          },
+        }
+      );
+
+      logger.info(
+        `Canceled recurring donations for subscription: ${subscriptionId}`
+      );
+      return result;
+    } catch (error) {
+      logger.error("Failed to cancel recurring donation:", error);
+      throw error;
+    }
+  }
+
   // Update donation status
   async updateDonationStatus(paymentIntentId, status) {
     try {
-      const donation = await Donation.findOne({ stripePaymentIntentId: paymentIntentId });
-      
+      const donation = await Donation.findOne({
+        stripePaymentIntentId: paymentIntentId,
+      });
+
       if (!donation) {
-        throw new Error('Donation not found');
+        throw new Error("Donation not found");
       }
 
       donation.paymentStatus = status;
@@ -86,10 +145,10 @@ class DonationService {
       await donation.save();
 
       logger.info(`Donation status updated: ${donation._id} -> ${status}`);
-      
+
       return donation;
     } catch (error) {
-      logger.error('Failed to update donation status:', error);
+      logger.error("Failed to update donation status:", error);
       throw error;
     }
   }
@@ -97,14 +156,10 @@ class DonationService {
   // Get donations with filtering
   async getDonations(filters = {}, options = {}) {
     try {
-      const {
-        page = 1,
-        limit = 10,
-        sort = { createdAt: -1 },
-      } = options;
+      const { page = 1, limit = 10, sort = { createdAt: -1 } } = options;
 
       const query = Donation.find(filters)
-        .populate('campaignId', 'title slug')
+        .populate("campaignId", "title slug")
         .sort(sort)
         .limit(limit * 1)
         .skip((page - 1) * limit);
@@ -119,7 +174,7 @@ class DonationService {
         totalDonations: total,
       };
     } catch (error) {
-      logger.error('Failed to get donations:', error);
+      logger.error("Failed to get donations:", error);
       throw error;
     }
   }
@@ -127,10 +182,12 @@ class DonationService {
   // Get donation by ID
   async getDonationById(donationId) {
     try {
-      return await Donation.findById(donationId)
-        .populate('campaignId', 'title slug description');
+      return await Donation.findById(donationId).populate(
+        "campaignId",
+        "title slug description"
+      );
     } catch (error) {
-      logger.error('Failed to get donation by ID:', error);
+      logger.error("Failed to get donation by ID:", error);
       throw error;
     }
   }
@@ -139,7 +196,7 @@ class DonationService {
   async getAnalytics(filters = {}) {
     try {
       const { startDate, endDate, campaignId } = filters;
-      
+
       const matchStage = {
         paymentStatus: PAYMENT_STATUS.SUCCEEDED,
       };
@@ -160,11 +217,11 @@ class DonationService {
           $group: {
             _id: null,
             totalDonations: { $sum: 1 },
-            totalAmount: { $sum: '$amount' },
-            averageAmount: { $avg: '$amount' },
-            uniqueDonors: { $addToSet: '$donorInfo.email' },
+            totalAmount: { $sum: "$amount" },
+            averageAmount: { $avg: "$amount" },
+            uniqueDonors: { $addToSet: "$donorInfo.email" },
             recurringDonations: {
-              $sum: { $cond: ['$isRecurring', 1, 0] }
+              $sum: { $cond: ["$isRecurring", 1, 0] },
             },
           },
         },
@@ -172,11 +229,13 @@ class DonationService {
           $project: {
             _id: 0,
             totalDonations: 1,
-            totalAmount: { $round: ['$totalAmount', 2] },
-            averageAmount: { $round: ['$averageAmount', 2] },
-            uniqueDonorCount: { $size: '$uniqueDonors' },
+            totalAmount: { $round: ["$totalAmount", 2] },
+            averageAmount: { $round: ["$averageAmount", 2] },
+            uniqueDonorCount: { $size: "$uniqueDonors" },
             recurringDonations: 1,
-            oneTimeDonations: { $subtract: ['$totalDonations', '$recurringDonations'] },
+            oneTimeDonations: {
+              $subtract: ["$totalDonations", "$recurringDonations"],
+            },
           },
         },
       ];
@@ -189,15 +248,15 @@ class DonationService {
         {
           $group: {
             _id: {
-              year: { $year: '$createdAt' },
-              month: { $month: '$createdAt' },
-              day: { $dayOfMonth: '$createdAt' },
+              year: { $year: "$createdAt" },
+              month: { $month: "$createdAt" },
+              day: { $dayOfMonth: "$createdAt" },
             },
-            dailyTotal: { $sum: '$amount' },
+            dailyTotal: { $sum: "$amount" },
             dailyCount: { $sum: 1 },
           },
         },
-        { $sort: { '_id.year': 1, '_id.month': 1, '_id.day': 1 } },
+        { $sort: { "_id.year": 1, "_id.month": 1, "_id.day": 1 } },
         { $limit: 30 }, // Last 30 days
       ];
 
@@ -215,7 +274,7 @@ class DonationService {
         trends,
       };
     } catch (error) {
-      logger.error('Failed to get donation analytics:', error);
+      logger.error("Failed to get donation analytics:", error);
       throw error;
     }
   }
@@ -234,8 +293,128 @@ class DonationService {
           $group: {
             _id: null,
             totalDonations: { $sum: 1 },
-            totalAmount: { $sum: '$amount' },
-            averageAmount: { $avg: '$amount' },
-            uniqueDonors: { $addToSet: '$donorInfo.email' },
-            largestDonation: { $max: '$amount' },
-            smallestDonation:
+            totalAmount: { $sum: "$amount" },
+            averageAmount: { $avg: "$amount" },
+            uniqueDonors: { $addToSet: "$donorInfo.email" },
+            largestDonation: { $max: "$amount" },
+            smallestDonation: { $min: "$amount" },
+            recurringDonations: {
+              $sum: { $cond: ["$isRecurring", 1, 0] },
+            },
+          },
+        },
+        {
+          $project: {
+            _id: 0,
+            totalDonations: 1,
+            totalAmount: { $round: ["$totalAmount", 2] },
+            averageAmount: { $round: ["$averageAmount", 2] },
+            uniqueDonorCount: { $size: "$uniqueDonors" },
+            largestDonation: { $round: ["$largestDonation", 2] },
+            smallestDonation: { $round: ["$smallestDonation", 2] },
+            recurringDonations: 1,
+            oneTimeDonations: {
+              $subtract: ["$totalDonations", "$recurringDonations"],
+            },
+          },
+        },
+      ];
+
+      const [stats] = await Donation.aggregate(pipeline);
+
+      // Get recent donations for this campaign
+      const recentDonations = await Donation.find({
+        campaignId: new mongoose.Types.ObjectId(campaignId),
+        paymentStatus: PAYMENT_STATUS.SUCCEEDED,
+        isAnonymous: false,
+      })
+        .sort({ createdAt: -1 })
+        .limit(10)
+        .select(
+          "donorInfo.firstName donorInfo.lastName amount createdAt message"
+        )
+        .lean();
+
+      return {
+        stats: stats || {
+          totalDonations: 0,
+          totalAmount: 0,
+          averageAmount: 0,
+          uniqueDonorCount: 0,
+          largestDonation: 0,
+          smallestDonation: 0,
+          recurringDonations: 0,
+          oneTimeDonations: 0,
+        },
+        recentDonations,
+      };
+    } catch (error) {
+      logger.error("Failed to get campaign stats:", error);
+      throw error;
+    }
+  }
+
+  // Get donor statistics
+  async getDonorStats(donorEmail) {
+    try {
+      const pipeline = [
+        {
+          $match: {
+            "donorInfo.email": donorEmail,
+            paymentStatus: PAYMENT_STATUS.SUCCEEDED,
+          },
+        },
+        {
+          $group: {
+            _id: "$donorInfo.email",
+            totalDonations: { $sum: 1 },
+            totalAmount: { $sum: "$amount" },
+            averageAmount: { $avg: "$amount" },
+            firstDonation: { $min: "$createdAt" },
+            lastDonation: { $max: "$createdAt" },
+            campaigns: { $addToSet: "$campaignId" },
+          },
+        },
+      ];
+
+      const [stats] = await Donation.aggregate(pipeline);
+      return stats;
+    } catch (error) {
+      logger.error("Failed to get donor stats:", error);
+      throw error;
+    }
+  }
+
+  // Get top donors
+  async getTopDonors(limit = 10) {
+    try {
+      const pipeline = [
+        {
+          $match: {
+            paymentStatus: PAYMENT_STATUS.SUCCEEDED,
+            isAnonymous: false,
+          },
+        },
+        {
+          $group: {
+            _id: "$donorInfo.email",
+            firstName: { $first: "$donorInfo.firstName" },
+            lastName: { $first: "$donorInfo.lastName" },
+            totalDonated: { $sum: "$amount" },
+            donationCount: { $sum: 1 },
+            lastDonation: { $max: "$createdAt" },
+          },
+        },
+        { $sort: { totalDonated: -1 } },
+        { $limit: limit },
+      ];
+
+      return await Donation.aggregate(pipeline);
+    } catch (error) {
+      logger.error("Failed to get top donors:", error);
+      throw error;
+    }
+  }
+}
+
+module.exports = new DonationService();
