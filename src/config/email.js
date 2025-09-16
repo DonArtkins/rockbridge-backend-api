@@ -5,7 +5,7 @@ if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
   throw new Error("Gmail credentials not provided in environment variables");
 }
 
-const transporter = nodemailer.createTransporter({
+const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
     user: process.env.GMAIL_USER,
