@@ -66,6 +66,7 @@ class CampaignController {
         },
       });
     } catch (error) {
+      logger.error("Error fetching campaigns:", error);
       next(error);
     }
   }
@@ -93,6 +94,7 @@ class CampaignController {
         data: { campaign },
       });
     } catch (error) {
+      logger.error("Error fetching campaign by slug:", error);
       next(error);
     }
   }
@@ -117,6 +119,7 @@ class CampaignController {
         data: { campaign },
       });
     } catch (error) {
+      logger.error("Error fetching campaign by ID:", error);
       next(error);
     }
   }
@@ -136,8 +139,8 @@ class CampaignController {
       }
 
       // Get donation statistics for this campaign
-      const donationStats =
-        await require("../services/donationService").getCampaignStats(id);
+      const donationService = require("../services/donationService");
+      const donationStats = await donationService.getCampaignStats(id);
 
       const stats = {
         campaign: {
@@ -148,7 +151,7 @@ class CampaignController {
           progressPercentage: campaign.progressPercentage,
           donorCount: campaign.donorCount,
           daysRemaining: campaign.daysRemaining,
-          status: campaign.campaignStatus,
+          status: campaign.status,
         },
         donations: donationStats,
       };
@@ -158,6 +161,7 @@ class CampaignController {
         data: { stats },
       });
     } catch (error) {
+      logger.error("Error fetching campaign stats:", error);
       next(error);
     }
   }
@@ -179,6 +183,7 @@ class CampaignController {
         data: { campaigns },
       });
     } catch (error) {
+      logger.error("Error fetching featured campaigns:", error);
       next(error);
     }
   }
