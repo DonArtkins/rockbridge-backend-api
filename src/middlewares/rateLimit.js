@@ -1,24 +1,26 @@
 const rateLimit = require("express-rate-limit");
-const RedisStore = require("rate-limit-redis");
 const { HTTP_STATUS, RATE_LIMITS } = require("../utils/constants");
 
 // Redis client (optional - falls back to memory store)
 let redisClient;
+let store;
+
 try {
   if (process.env.REDIS_URL) {
     const redis = require("redis");
+    const RedisStore = require("rate-limit-redis");
     redisClient = redis.createClient(process.env.REDIS_URL);
+    store = new RedisStore({
+      sendCommand: (...args) => redisClient.call(...args),
+    });
+    console.log("Using Redis store for rate limiting");
+  } else {
+    console.log("Redis not configured, using memory store for rate limiting");
   }
 } catch (error) {
   console.log("Redis not available, using memory store for rate limiting");
+  store = undefined; // Let express-rate-limit use its default MemoryStore
 }
-
-// Create rate limit store
-const store = redisClient
-  ? new RedisStore({
-      sendCommand: (...args) => redisClient.call(...args),
-    })
-  : undefined;
 
 // Custom rate limit message
 const rateLimitMessage = {
@@ -34,7 +36,7 @@ const globalRateLimit = rateLimit({
   message: rateLimitMessage,
   standardHeaders: true,
   legacyHeaders: false,
-  store,
+  store, // This can be undefined and express-rate-limit will use MemoryStore
   handler: (req, res) => {
     res.status(HTTP_STATUS.TOO_MANY_REQUESTS).json({
       ...rateLimitMessage,
