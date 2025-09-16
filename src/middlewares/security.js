@@ -1,4 +1,3 @@
-const rateLimit = require("express-rate-limit");
 const slowDown = require("express-slow-down");
 
 // Security middleware for input validation and sanitization
@@ -27,9 +26,9 @@ const securityMiddleware = (req, res, next) => {
 // Slow down repeated requests
 const speedLimiter = slowDown({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  delayAfter: 50, // Allow 50 requests per 15 minutes at full speed
-  delayMs: 500, // Add 500ms delay after limit is reached
-  maxDelayMs: 20000, // Max delay of 20 seconds
+  delayAfter: 100, // allow 100 requests per 15 minutes
+  delayMs: () => 500, // fixed 500ms delay for all exceeding requests
+  validate: { delayMs: false }, // disable the warning
 });
 
 // IP whitelist middleware (for admin operations)

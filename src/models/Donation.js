@@ -235,7 +235,6 @@ donationSchema.virtual("formattedAmount").get(function () {
 donationSchema.index({ "donorInfo.email": 1 });
 donationSchema.index({ campaignId: 1, createdAt: -1 });
 donationSchema.index({ paymentStatus: 1 });
-donationSchema.index({ stripePaymentIntentId: 1 });
 donationSchema.index({ createdAt: -1 });
 donationSchema.index({ isRecurring: 1, recurringFrequency: 1 });
 donationSchema.index({ processedAt: 1 }, { sparse: true });

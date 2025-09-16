@@ -17,6 +17,7 @@ A high-performance, scalable donation processing API built for Rockbridge Minist
 ## 🏗️ Architecture
 
 ### Technology Stack
+
 - **Runtime**: Node.js 18+
 - **Framework**: Express.js
 - **Database**: MongoDB with Mongoose ODM
@@ -27,6 +28,7 @@ A high-performance, scalable donation processing API built for Rockbridge Minist
 - **Testing**: Jest + Supertest
 
 ### Design Principles
+
 - **Stateless**: Each request is independent
 - **Atomic Operations**: Database transactions ensure consistency
 - **Graceful Degradation**: Continues operation even if email fails
@@ -56,6 +58,7 @@ rockbridge-backend-api/
 ## 🛠️ Setup Instructions
 
 ### Prerequisites
+
 - Node.js 18+ and npm 8+
 - MongoDB 6.0+ (local or Atlas)
 - Stripe account with API keys
@@ -64,42 +67,46 @@ rockbridge-backend-api/
 ### Installation
 
 1. **Clone and setup project:**
+
    ```bash
    # Run the setup commands from the previous artifact
    # This creates all folders and installs dependencies
    ```
 
 2. **Environment Configuration:**
+
    ```bash
    cp .env.example .env
    # Edit .env with your actual values
    ```
 
 3. **Required Environment Variables:**
+
    ```env
    # Server
    PORT=5000
    NODE_ENV=development
-   
+
    # Database
    MONGODB_URI=mongodb://localhost:27017/rockbridge-donations
-   
+
    # Stripe
    STRIPE_PUBLISHABLE_KEY=pk_test_...
    STRIPE_SECRET_KEY=sk_test_...
    STRIPE_WEBHOOK_SECRET=whsec_...
-   
+
    # Email
    GMAIL_USER=your-email@gmail.com
    GMAIL_APP_PASSWORD=your-16-digit-app-password
    ADMIN_EMAIL=admin@rockbridgeministries.org
-   
+
    # Security
    RATE_LIMIT_WINDOW_MS=900000
    RATE_LIMIT_MAX_REQUESTS=100
    ```
 
 4. **Database Setup:**
+
    ```bash
    # Seed initial campaigns
    npm run seed
@@ -113,11 +120,13 @@ rockbridge-backend-api/
 ## 🔄 API Endpoints
 
 ### Health Check
+
 ```http
 GET /api/health
 ```
 
 ### Campaigns
+
 ```http
 GET    /api/campaigns              # List all active campaigns
 GET    /api/campaigns/:slug        # Get campaign by slug
@@ -125,6 +134,7 @@ GET    /api/campaigns/:id/stats    # Campaign statistics
 ```
 
 ### Donations
+
 ```http
 POST   /api/donations/intent       # Create payment intent
 POST   /api/donations/confirm      # Confirm successful donation
@@ -132,6 +142,7 @@ GET    /api/donations/:id          # Get donation details
 ```
 
 ### Payments (Stripe Webhooks)
+
 ```http
 POST   /api/webhooks/stripe        # Stripe webhook endpoint
 ```
@@ -139,6 +150,7 @@ POST   /api/webhooks/stripe        # Stripe webhook endpoint
 ## 💳 Payment Flow
 
 ### 1. Create Donation Intent
+
 ```javascript
 POST /api/donations/intent
 {
@@ -166,17 +178,19 @@ POST /api/donations/intent
 ```
 
 ### 2. Frontend Payment Processing
+
 ```javascript
 // Your frontend uses Stripe Elements with clientSecret
 const result = await stripe.confirmPayment({
   elements,
   confirmParams: {
-    return_url: 'https://yoursite.com/donation-success'
-  }
+    return_url: "https://yoursite.com/donation-success",
+  },
 });
 ```
 
 ### 3. Confirm Donation
+
 ```javascript
 POST /api/donations/confirm
 {
@@ -200,6 +214,7 @@ POST /api/donations/confirm
 ## 🌍 Handling Global Concurrent Donations
 
 ### Database Transactions
+
 ```javascript
 // Atomic campaign update with optimistic locking
 const session = await mongoose.startSession();
@@ -208,18 +223,18 @@ try {
     // Update campaign stats atomically
     const campaign = await Campaign.findByIdAndUpdate(
       campaignId,
-      { 
-        $inc: { 
+      {
+        $inc: {
           raisedAmount: amount,
-          donorCount: 1 
-        }
+          donorCount: 1,
+        },
       },
       { session, new: true }
     );
-    
+
     // Create donation record
     const donation = await new Donation(donationData).save({ session });
-    
+
     // Update/create donor record
     await Donor.findOneAndUpdate(
       { email: donorInfo.email },
@@ -233,55 +248,68 @@ try {
 ```
 
 ### Rate Limiting Strategy
+
 ```javascript
 // Different limits for different endpoints
 const donationLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 5, // 5 donations per IP per 15min
-  message: 'Too many donation attempts'
+  message: "Too many donation attempts",
 });
 
 const campaignLimiter = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute
   max: 100, // 100 requests per minute
-  message: 'Rate limit exceeded'
+  message: "Rate limit exceeded",
 });
 ```
 
 ### Stripe Webhook Handling
+
 ```javascript
 // Idempotent webhook processing
-app.post('/api/webhooks/stripe', express.raw({ type: 'application/json' }), async (req, res) => {
-  const sig = req.headers['stripe-signature'];
-  let event;
+app.post(
+  "/api/webhooks/stripe",
+  express.raw({ type: "application/json" }),
+  async (req, res) => {
+    const sig = req.headers["stripe-signature"];
+    let event;
 
-  try {
-    event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
-  } catch (err) {
-    console.log('Webhook signature verification failed:', err.message);
-    return res.status(400).send(`Webhook Error: ${err.message}`);
-  }
+    try {
+      event = stripe.webhooks.constructEvent(
+        req.body,
+        sig,
+        process.env.STRIPE_WEBHOOK_SECRET
+      );
+    } catch (err) {
+      console.log("Webhook signature verification failed:", err.message);
+      return res.status(400).send(`Webhook Error: ${err.message}`);
+    }
 
-  // Handle the event idempotently
-  try {
-    await processWebhookEvent(event);
-    res.json({ received: true });
-  } catch (error) {
-    console.error('Webhook processing failed:', error);
-    res.status(500).json({ error: 'Webhook processing failed' });
+    // Handle the event idempotently
+    try {
+      await processWebhookEvent(event);
+      res.json({ received: true });
+    } catch (error) {
+      console.error("Webhook processing failed:", error);
+      res.status(500).json({ error: "Webhook processing failed" });
+    }
   }
-});
+);
 ```
 
 ## 📧 Email System
 
 ### Automated Email Flow
+
 1. **Donation Receipt**: Sent immediately after successful payment
 2. **Thank You Email**: Sent after donation confirmation
 3. **Admin Notification**: Sent to ministry administrators
 
 ### Email Queue (Future Enhancement)
+
 For high volume, consider implementing:
+
 - Redis-based email queue
 - Retry mechanism for failed emails
 - Email template caching
@@ -298,10 +326,11 @@ For high volume, consider implementing:
 ## 📊 Monitoring & Logging
 
 ### Winston Logging Configuration
+
 ```javascript
 // Structured logging with rotation
 const logger = winston.createLogger({
-  level: 'info',
+  level: "info",
   format: winston.format.combine(
     winston.format.timestamp(),
     winston.format.errors({ stack: true }),
@@ -309,19 +338,20 @@ const logger = winston.createLogger({
   ),
   transports: [
     new winston.transports.DailyRotateFile({
-      filename: 'logs/error-%DATE%.log',
-      datePattern: 'YYYY-MM-DD',
-      level: 'error'
+      filename: "logs/error-%DATE%.log",
+      datePattern: "YYYY-MM-DD",
+      level: "error",
     }),
     new winston.transports.DailyRotateFile({
-      filename: 'logs/combined-%DATE%.log',
-      datePattern: 'YYYY-MM-DD'
-    })
-  ]
+      filename: "logs/combined-%DATE%.log",
+      datePattern: "YYYY-MM-DD",
+    }),
+  ],
 });
 ```
 
 ### Health Check Endpoint
+
 ```http
 GET /api/health
 
@@ -338,6 +368,7 @@ GET /api/health
 ## 🧪 Testing
 
 ### Run Tests
+
 ```bash
 npm test              # Run all tests
 npm run test:watch    # Watch mode
@@ -345,6 +376,7 @@ npm run test:coverage # Coverage report
 ```
 
 ### Test Categories
+
 - **Unit Tests**: Individual functions and services
 - **Integration Tests**: API endpoints and database
 - **E2E Tests**: Complete donation flows
@@ -352,16 +384,19 @@ npm run test:coverage # Coverage report
 ## 🚀 Deployment
 
 ### Environment Setup
+
 1. **Staging**: Test with Stripe test keys
 2. **Production**: Use Stripe live keys, MongoDB Atlas
 
 ### Recommended Hosting
+
 - **Railway**: Easy deployment, MongoDB add-on
 - **Render**: Free tier available
 - **Heroku**: Mature platform
 - **DigitalOcean**: App Platform
 
 ### Docker Support
+
 ```bash
 docker build -t rockbridge-api .
 docker run -p 5000:5000 rockbridge-api
@@ -370,25 +405,26 @@ docker run -p 5000:5000 rockbridge-api
 ## 📈 Performance Optimizations
 
 ### Database Indexing
+
 ```javascript
 // Campaign indexes
 campaignSchema.index({ status: 1, category: 1 });
-campaignSchema.index({ slug: 1 });
 
-// Donation indexes  
-donationSchema.index({ 'donorInfo.email': 1 });
+// Donation indexes
+donationSchema.index({ "donorInfo.email": 1 });
 donationSchema.index({ campaignId: 1, createdAt: -1 });
 donationSchema.index({ paymentStatus: 1 });
 ```
 
 ### Connection Pooling
+
 ```javascript
 // MongoDB connection with pooling
 mongoose.connect(MONGODB_URI, {
-  maxPoolSize: 50,        // Maximum connections
-  minPoolSize: 5,         // Minimum connections
-  maxIdleTimeMS: 30000,   // Close after 30s idle
-  serverSelectionTimeoutMS: 5000
+  maxPoolSize: 50, // Maximum connections
+  minPoolSize: 5, // Minimum connections
+  maxIdleTimeMS: 30000, // Close after 30s idle
+  serverSelectionTimeoutMS: 5000,
 });
 ```
 
@@ -412,6 +448,7 @@ npm run seed          # Populate database with sample data
 ### Common Issues
 
 1. **MongoDB Connection Failed**
+
    ```bash
    # Check if MongoDB is running
    mongosh
@@ -419,6 +456,7 @@ npm run seed          # Populate database with sample data
    ```
 
 2. **Stripe Webhook Failing**
+
    ```bash
    # Test webhook locally with Stripe CLI
    stripe listen --forward-to localhost:5000/api/webhooks/stripe

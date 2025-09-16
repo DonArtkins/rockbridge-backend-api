@@ -206,7 +206,6 @@ campaignSchema.virtual("campaignStatus").get(function () {
 
 // Indexes for performance
 campaignSchema.index({ status: 1, category: 1 });
-campaignSchema.index({ slug: 1 });
 campaignSchema.index({ createdAt: -1 });
 campaignSchema.index({ priority: -1, createdAt: -1 });
 campaignSchema.index({ isUrgent: -1, priority: -1 });

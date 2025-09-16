@@ -116,22 +116,4 @@ router.get("/:slug", campaignController.getCampaignBySlug);
  */
 router.get("/id/:id", campaignController.getCampaignById);
 
-/**
- * @swagger
- * /api/campaigns/{id}/stats:
- *   get:
- *     summary: Get campaign statistics
- *     tags: [Campaigns]
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: Campaign statistics
- */
-router.get("/:id/stats", campaignController.getCampaignStats);
-
 module.exports = router;

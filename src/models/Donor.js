@@ -217,8 +217,6 @@ donorSchema.virtual("retentionStatus").get(function () {
 });
 
 // Indexes
-donorSchema.index({ email: 1 });
-donorSchema.index({ stripeCustomerId: 1 });
 donorSchema.index({ totalDonated: -1 });
 donorSchema.index({ lastDonationDate: -1 });
 donorSchema.index({ donorType: 1 });
