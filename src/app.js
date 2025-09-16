@@ -71,8 +71,13 @@ app.use(securityMiddleware);
 // CORS configuration
 app.use(cors(corsConfig));
 
-// Rate limiting (global)
-app.use("/api/", globalRateLimit);
+// Rate limiting (global) - wrap in a function to ensure proper middleware format
+app.use("/api/", (req, res, next) => {
+  if (typeof globalRateLimit === "function") {
+    return globalRateLimit(req, res, next);
+  }
+  next();
+});
 
 // Request logging
 app.use(requestLogger);
