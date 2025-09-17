@@ -1,32 +1,46 @@
 const mongoose = require("mongoose");
 const mongoosePaginate = require("mongoose-paginate-v2");
+const { PAYMENT_STATUS } = require("../utils/constants");
 
 const donationSchema = new mongoose.Schema(
   {
+    // Ministry Initiative instead of Campaign
+    ministry: {
+      type: String,
+      required: true,
+      enum: [
+        "Holiday Homes",
+        "Clean Water Initiative",
+        "Workplace Ministry",
+        "Lish AI Labs",
+        "Upendo Academy",
+      ],
+      index: true,
+    },
+
+    // Donor Information
     donorInfo: {
       firstName: {
         type: String,
-        required: [true, "First name is required"],
+        required: true,
         trim: true,
-        maxlength: [50, "First name cannot exceed 50 characters"],
+        maxlength: 50,
       },
       lastName: {
         type: String,
-        required: [true, "Last name is required"],
+        required: true,
         trim: true,
-        maxlength: [50, "Last name cannot exceed 50 characters"],
+        maxlength: 50,
       },
       email: {
         type: String,
-        required: [true, "Email is required"],
+        required: true,
         lowercase: true,
-        trim: true,
-        match: [/^\S+@\S+\.\S+$/, "Please provide a valid email"],
+        index: true,
       },
       phone: {
         type: String,
         trim: true,
-        match: [/^[\+]?[\d\s\-\(\)]+$/, "Please provide a valid phone number"],
       },
       address: {
         street: String,
@@ -41,33 +55,61 @@ const donationSchema = new mongoose.Schema(
         },
       },
     },
-    campaignId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Campaign",
-      required: [true, "Campaign ID is required"],
-    },
+
+    // Payment Information
     amount: {
       type: Number,
-      required: [true, "Donation amount is required"],
-      min: [1, "Minimum donation amount is $1"],
-      validate: {
-        validator: function (value) {
-          return Number.isInteger(value * 100);
-        },
-        message:
-          "Amount must be a valid currency amount (max 2 decimal places)",
-      },
+      required: true,
+      min: [1, "Amount must be at least $1"],
+      max: [100000, "Amount cannot exceed $100,000"],
     },
+
     currency: {
       type: String,
-      default: "USD",
-      enum: ["USD", "EUR", "GBP", "CAD", "AUD"],
+      required: true,
       uppercase: true,
+      enum: ["USD", "EUR", "GBP", "CAD", "AUD"],
+      default: "USD",
     },
+
+    paymentStatus: {
+      type: String,
+      required: true,
+      enum: Object.values(PAYMENT_STATUS),
+      default: PAYMENT_STATUS.PENDING,
+      index: true,
+    },
+
+    // Stripe Integration
+    stripePaymentIntentId: {
+      type: String,
+      unique: true,
+      sparse: true, // Allows null values while maintaining uniqueness
+    },
+
+    stripeCustomerId: String,
+    stripeSubscriptionId: String, // For recurring donations
+    stripeInvoiceId: String, // For recurring donations
+
+    // Transaction Details
+    netAmount: {
+      type: Number,
+      default: function () {
+        return this.amount;
+      },
+    },
+
+    transactionFee: {
+      type: Number,
+      default: 0,
+    },
+
+    // Donation Type
     isRecurring: {
       type: Boolean,
       default: false,
     },
+
     recurringFrequency: {
       type: String,
       enum: ["monthly", "quarterly", "annually"],
@@ -75,152 +117,69 @@ const donationSchema = new mongoose.Schema(
         return this.isRecurring;
       },
     },
+
+    // Donor Preferences
     isAnonymous: {
       type: Boolean,
       default: false,
     },
+
     message: {
       type: String,
-      maxlength: [1000, "Message cannot exceed 1000 characters"],
+      maxlength: 1000,
       trim: true,
     },
+
+    // Dedication
     dedicationType: {
       type: String,
       enum: ["in_honor", "in_memory", "none"],
       default: "none",
     },
+
     dedicationName: {
       type: String,
+      maxlength: 100,
       required: function () {
         return this.dedicationType !== "none";
       },
-      trim: true,
-      maxlength: [100, "Dedication name cannot exceed 100 characters"],
     },
 
-    // Stripe-related fields
-    stripePaymentIntentId: {
-      type: String,
-      required: [true, "Stripe Payment Intent ID is required"],
-      unique: true,
-      sparse: true,
-    },
-    stripeCustomerId: String,
-    stripeSubscriptionId: String,
-
-    paymentStatus: {
-      type: String,
-      enum: [
-        "pending",
-        "processing",
-        "succeeded",
-        "failed",
-        "canceled",
-        "refunded",
-        "requires_action",
-      ],
-      default: "pending",
-    },
-    paymentMethod: {
-      type: String,
-      enum: ["card", "bank_transfer", "sepa_debit", "other"],
-      default: "card",
-    },
-    transactionFee: {
-      type: Number,
-      default: 0,
-      min: [0, "Transaction fee cannot be negative"],
-    },
-    netAmount: {
-      type: Number,
-      required: [true, "Net amount is required"],
-      min: [0, "Net amount cannot be negative"],
-    },
-    receiptUrl: String,
-
-    // Email tracking
+    // Processing Status
+    processedAt: Date,
     receiptSent: {
       type: Boolean,
       default: false,
     },
-    receiptSentAt: Date,
     thankYouSent: {
       type: Boolean,
       default: false,
-    },
-    thankYouSentAt: Date,
-
-    // Tax receipt (for annual summaries)
-    taxReceiptNumber: String,
-    taxReceiptSent: {
-      type: Boolean,
-      default: false,
-    },
-
-    // Processing tracking
-    processedAt: Date,
-    failureReason: String,
-    retryCount: {
-      type: Number,
-      default: 0,
-      min: 0,
-      max: 5,
     },
 
     // Metadata
     source: {
       type: String,
-      default: "website",
-      enum: [
-        "website",
-        "mobile_app",
-        "social_media",
-        "email_campaign",
-        "other",
-      ],
+      default: "web",
+      enum: ["web", "mobile", "api", "recurring_webhook"],
     },
+
+    ipAddress: String,
     userAgent: String,
-    ipAddress: {
-      type: String,
-      validate: {
-        validator: function (v) {
-          if (!v) return true;
-          // Simple IP validation (IPv4 and IPv6)
-          const ipv4Regex =
-            /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
-          const ipv6Regex = /^(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$/;
-          return ipv4Regex.test(v) || ipv6Regex.test(v);
-        },
-        message: "Invalid IP address format",
-      },
-    },
-    referrer: String,
   },
   {
     timestamps: true,
-    toJSON: {
-      virtuals: true,
-      transform: function (doc, ret) {
-        delete ret.__v;
-        delete ret.id;
-        // Hide sensitive info
-        if (ret.donorInfo && ret.isAnonymous) {
-          ret.donorInfo = {
-            firstName: "Anonymous",
-            lastName: "Donor",
-          };
-        }
-        return ret;
-      },
-    },
-    toObject: { virtuals: true },
   }
 );
 
-// Virtual for full donor name
+// Indexes
+donationSchema.index({ createdAt: -1 });
+donationSchema.index({ "donorInfo.email": 1, createdAt: -1 });
+donationSchema.index({ ministry: 1, createdAt: -1 });
+donationSchema.index({ paymentStatus: 1, createdAt: -1 });
+
+// Virtual for donor full name
 donationSchema.virtual("donorInfo.fullName").get(function () {
-  if (this.isAnonymous) return "Anonymous Donor";
-  return `${this.donorInfo.firstName} ${this.donorInfo.lastName}`.trim();
+  return `${this.donorInfo.firstName} ${this.donorInfo.lastName}`;
 });
 
 // Virtual for formatted amount
@@ -231,58 +190,64 @@ donationSchema.virtual("formattedAmount").get(function () {
   }).format(this.amount);
 });
 
-// Indexes
-donationSchema.index({ "donorInfo.email": 1 });
-donationSchema.index({ campaignId: 1, createdAt: -1 });
-donationSchema.index({ paymentStatus: 1 });
-donationSchema.index({ createdAt: -1 });
-donationSchema.index({ isRecurring: 1, recurringFrequency: 1 });
-donationSchema.index({ processedAt: 1 }, { sparse: true });
-
-// Add pagination plugin
-donationSchema.plugin(mongoosePaginate);
-
-// Pre-save middleware
-donationSchema.pre("save", function (next) {
-  // Calculate net amount if not provided
-  if (!this.netAmount && this.amount && this.transactionFee !== undefined) {
-    this.netAmount = Number((this.amount - this.transactionFee).toFixed(2));
-  }
-
-  // Set processed timestamp when status changes to succeeded
-  if (
-    this.isModified("paymentStatus") &&
-    this.paymentStatus === "succeeded" &&
-    !this.processedAt
-  ) {
-    this.processedAt = new Date();
-  }
-
-  next();
-});
-
 // Instance methods
-donationSchema.methods.markAsProcessed = function () {
-  this.paymentStatus = "succeeded";
-  this.processedAt = new Date();
-  return this.save();
-};
-
 donationSchema.methods.markReceiptSent = function () {
   this.receiptSent = true;
-  this.receiptSentAt = new Date();
   return this.save();
 };
 
 donationSchema.methods.markThankYouSent = function () {
   this.thankYouSent = true;
-  this.thankYouSentAt = new Date();
   return this.save();
 };
 
-donationSchema.methods.incrementRetry = function () {
-  this.retryCount += 1;
-  return this.save();
+donationSchema.methods.isSuccessful = function () {
+  return this.paymentStatus === PAYMENT_STATUS.SUCCEEDED;
 };
 
-module.exports = mongoose.model("Donation", donationSchema);
+donationSchema.methods.isPending = function () {
+  return this.paymentStatus === PAYMENT_STATUS.PENDING;
+};
+
+donationSchema.methods.isFailed = function () {
+  return [PAYMENT_STATUS.FAILED, PAYMENT_STATUS.CANCELED].includes(
+    this.paymentStatus
+  );
+};
+
+// Static methods
+donationSchema.statics.getMinistryStats = async function (ministry) {
+  return this.aggregate([
+    {
+      $match: {
+        ministry,
+        paymentStatus: PAYMENT_STATUS.SUCCEEDED,
+      },
+    },
+    {
+      $group: {
+        _id: "$ministry",
+        totalAmount: { $sum: "$amount" },
+        totalDonations: { $sum: 1 },
+        avgAmount: { $avg: "$amount" },
+        uniqueDonors: { $addToSet: "$donorInfo.email" },
+      },
+    },
+    {
+      $project: {
+        ministry: "$_id",
+        totalAmount: { $round: ["$totalAmount", 2] },
+        totalDonations: 1,
+        avgAmount: { $round: ["$avgAmount", 2] },
+        uniqueDonorCount: { $size: "$uniqueDonors" },
+      },
+    },
+  ]);
+};
+
+// Add pagination plugin
+donationSchema.plugin(mongoosePaginate);
+
+const Donation = mongoose.model("Donation", donationSchema);
+
+module.exports = { Donation };

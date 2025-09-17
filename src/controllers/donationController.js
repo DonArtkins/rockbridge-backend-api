@@ -1,4 +1,4 @@
-const { Donation, Campaign, Donor } = require("../models");
+const { Donation, Donor } = require("../models");
 const donationService = require("../services/donationService");
 const stripeService = require("../services/stripeService");
 const emailService = require("../services/emailService");
@@ -10,21 +10,21 @@ class DonationController {
   // Create donation intent (Step 1: Prepare payment)
   async createDonationIntent(req, res, next) {
     try {
-      const { campaignId, amount, currency, donorInfo, isRecurring } = req.body;
+      const { ministry, amount, currency, donorInfo, isRecurring } = req.body;
 
-      // Validate campaign exists and is active
-      const campaign = await Campaign.findById(campaignId);
-      if (!campaign) {
-        return res.status(HTTP_STATUS.NOT_FOUND).json({
-          success: false,
-          message: MESSAGES.ERROR.CAMPAIGN_NOT_FOUND,
-        });
-      }
+      // Validate ministry initiative exists
+      const validMinistries = [
+        "Holiday Homes",
+        "Clean Water Initiative",
+        "Workplace Ministry",
+        "Lish AI Labs",
+        "Upendo Academy",
+      ];
 
-      if (!campaign.canReceiveDonations()) {
+      if (!validMinistries.includes(ministry)) {
         return res.status(HTTP_STATUS.BAD_REQUEST).json({
           success: false,
-          message: MESSAGES.ERROR.CAMPAIGN_INACTIVE,
+          message: "Invalid ministry initiative selected",
         });
       }
 
@@ -33,8 +33,7 @@ class DonationController {
         amount,
         currency,
         {
-          campaignId: campaignId,
-          campaignTitle: campaign.title,
+          ministry: ministry,
           donorEmail: donorInfo.email,
           donorName: `${donorInfo.firstName} ${donorInfo.lastName}`,
           isRecurring: isRecurring.toString(),
@@ -42,7 +41,7 @@ class DonationController {
       );
 
       logger.info(`Payment intent created: ${paymentIntent.id}`, {
-        campaignId,
+        ministry,
         amount,
         currency,
         donorEmail: donorInfo.email,
@@ -53,10 +52,11 @@ class DonationController {
         data: {
           clientSecret: paymentIntent.client_secret,
           paymentIntentId: paymentIntent.id,
-          campaignTitle: campaign.title,
+          ministry: ministry,
         },
       });
     } catch (error) {
+      logger.error("Error creating donation intent:", error);
       next(error);
     }
   }
@@ -103,7 +103,7 @@ class DonationController {
 
       logger.info(`Donation confirmed: ${donation._id}`, {
         donationId: donation._id,
-        campaignId: donation.campaignId,
+        ministry: donation.ministry,
         amount: donation.amount,
         donorEmail: donation.donorInfo.email,
       });
@@ -115,9 +115,11 @@ class DonationController {
           donationId: donation._id,
           amount: donation.amount,
           currency: donation.currency,
+          ministry: donation.ministry,
         },
       });
     } catch (error) {
+      logger.error("Error confirming donation:", error);
       next(error);
     }
   }
@@ -127,9 +129,7 @@ class DonationController {
     try {
       const { id } = req.params;
 
-      const donation = await Donation.findById(id)
-        .populate("campaignId", "title slug")
-        .lean();
+      const donation = await Donation.findById(id).lean();
 
       if (!donation) {
         return res.status(HTTP_STATUS.NOT_FOUND).json({
@@ -154,7 +154,7 @@ class DonationController {
         page = 1,
         limit = 10,
         status,
-        campaignId,
+        ministry,
         startDate,
         endDate,
         sort = "-createdAt",
@@ -164,7 +164,7 @@ class DonationController {
       const filter = {};
 
       if (status) filter.paymentStatus = status;
-      if (campaignId) filter.campaignId = campaignId;
+      if (ministry) filter.ministry = ministry;
 
       if (startDate || endDate) {
         filter.createdAt = {};
@@ -188,12 +188,6 @@ class DonationController {
         page: parseInt(page),
         limit: parseInt(limit),
         sort: sortObj,
-        populate: [
-          {
-            path: "campaignId",
-            select: "title slug",
-          },
-        ],
       };
 
       const result = await Donation.paginate(filter, options);
@@ -217,12 +211,12 @@ class DonationController {
   // Get donation analytics
   async getDonationAnalytics(req, res, next) {
     try {
-      const { startDate, endDate, campaignId } = req.query;
+      const { startDate, endDate, ministry } = req.query;
 
       const analytics = await donationService.getAnalytics({
         startDate,
         endDate,
-        campaignId,
+        ministry,
       });
 
       res.status(HTTP_STATUS.OK).json({
@@ -237,21 +231,20 @@ class DonationController {
   // Get recent donations (for public display)
   async getRecentDonations(req, res, next) {
     try {
-      const { limit = 10, campaignId } = req.query;
+      const { limit = 10, ministry } = req.query;
 
       const filter = {
         paymentStatus: PAYMENT_STATUS.SUCCEEDED,
         isAnonymous: false,
       };
 
-      if (campaignId) filter.campaignId = campaignId;
+      if (ministry) filter.ministry = ministry;
 
       const donations = await Donation.find(filter)
-        .populate("campaignId", "title slug")
         .sort({ createdAt: -1 })
         .limit(parseInt(limit))
         .select(
-          "donorInfo.firstName donorInfo.lastName amount currency message createdAt campaignId"
+          "donorInfo.firstName donorInfo.lastName amount currency message createdAt ministry"
         )
         .lean();
 
