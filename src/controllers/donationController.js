@@ -1,5 +1,4 @@
 const { Donation, Donor } = require("../models");
-const donationService = require("../services/donationService");
 const stripeService = require("../services/stripeService");
 const emailService = require("../services/emailService");
 const { HTTP_STATUS, MESSAGES, PAYMENT_STATUS } = require("../utils/constants");
@@ -80,15 +79,22 @@ class DonationController {
       }
 
       // Create donation record
-      const donation = await donationService.createDonation({
+      const donationData = {
         ...req.body,
         stripePaymentIntentId: paymentIntentId,
         paymentStatus: PAYMENT_STATUS.SUCCEEDED,
-        netAmount:
-          (paymentIntent.amount - (paymentIntent.application_fee_amount || 0)) /
-          100,
+        netAmount: paymentIntent.amount / 100,
         transactionFee: (paymentIntent.application_fee_amount || 0) / 100,
-      });
+        processedAt: new Date(),
+        ipAddress: req.ip,
+        userAgent: req.get("User-Agent"),
+      };
+
+      const donation = new Donation(donationData);
+      await donation.save();
+
+      // Create or update donor record
+      await this.createOrUpdateDonor(donation);
 
       // Send confirmation emails asynchronously
       setImmediate(async () => {
@@ -121,6 +127,39 @@ class DonationController {
     } catch (error) {
       logger.error("Error confirming donation:", error);
       next(error);
+    }
+  }
+
+  // Create or update donor helper method
+  async createOrUpdateDonor(donation) {
+    try {
+      const donor = await Donor.findOneAndUpdate(
+        { email: donation.donorInfo.email },
+        {
+          $set: {
+            firstName: donation.donorInfo.firstName,
+            lastName: donation.donorInfo.lastName,
+            phone: donation.donorInfo.phone,
+            address: donation.donorInfo.address,
+          },
+          $setOnInsert: {
+            email: donation.donorInfo.email,
+            preferredCurrency: donation.currency,
+          },
+        },
+        {
+          upsert: true,
+          new: true,
+        }
+      );
+
+      // Update donor statistics
+      await donor.updateStats(donation.amount);
+
+      return donor;
+    } catch (error) {
+      logger.error("Error creating/updating donor:", error);
+      throw error;
     }
   }
 
@@ -213,15 +252,92 @@ class DonationController {
     try {
       const { startDate, endDate, ministry } = req.query;
 
-      const analytics = await donationService.getAnalytics({
-        startDate,
-        endDate,
-        ministry,
-      });
+      const matchStage = {
+        paymentStatus: PAYMENT_STATUS.SUCCEEDED,
+      };
+
+      if (startDate || endDate) {
+        matchStage.createdAt = {};
+        if (startDate) matchStage.createdAt.$gte = new Date(startDate);
+        if (endDate) matchStage.createdAt.$lte = new Date(endDate);
+      }
+
+      if (ministry) {
+        matchStage.ministry = ministry;
+      }
+
+      const pipeline = [
+        { $match: matchStage },
+        {
+          $group: {
+            _id: null,
+            totalDonations: { $sum: 1 },
+            totalAmount: { $sum: "$amount" },
+            averageAmount: { $avg: "$amount" },
+            uniqueDonors: { $addToSet: "$donorInfo.email" },
+            recurringDonations: {
+              $sum: { $cond: ["$isRecurring", 1, 0] },
+            },
+            ministryStats: {
+              $push: {
+                ministry: "$ministry",
+                amount: "$amount",
+              },
+            },
+          },
+        },
+        {
+          $project: {
+            _id: 0,
+            totalDonations: 1,
+            totalAmount: { $round: ["$totalAmount", 2] },
+            averageAmount: { $round: ["$averageAmount", 2] },
+            uniqueDonorCount: { $size: "$uniqueDonors" },
+            recurringDonations: 1,
+            oneTimeDonations: {
+              $subtract: ["$totalDonations", "$recurringDonations"],
+            },
+          },
+        },
+      ];
+
+      const [analytics] = await Donation.aggregate(pipeline);
+
+      // Get ministry-wise breakdown
+      const ministryStats = await Donation.aggregate([
+        { $match: matchStage },
+        {
+          $group: {
+            _id: "$ministry",
+            totalAmount: { $sum: "$amount" },
+            totalDonations: { $sum: 1 },
+            avgAmount: { $avg: "$amount" },
+          },
+        },
+        {
+          $project: {
+            ministry: "$_id",
+            totalAmount: { $round: ["$totalAmount", 2] },
+            totalDonations: 1,
+            avgAmount: { $round: ["$avgAmount", 2] },
+          },
+        },
+        { $sort: { totalAmount: -1 } },
+      ]);
 
       res.status(HTTP_STATUS.OK).json({
         success: true,
-        data: { analytics },
+        data: {
+          analytics: analytics || {
+            totalDonations: 0,
+            totalAmount: 0,
+            averageAmount: 0,
+            uniqueDonorCount: 0,
+            recurringDonations: 0,
+            oneTimeDonations: 0,
+          },
+          ministryStats,
+        },
       });
     } catch (error) {
       next(error);

@@ -4,7 +4,7 @@ const { PAYMENT_STATUS } = require("../utils/constants");
 
 const donationSchema = new mongoose.Schema(
   {
-    // Ministry Initiative instead of Campaign
+    // Ministry Initiative (removed campaignId dependency)
     ministry: {
       type: String,
       required: true,
@@ -47,7 +47,10 @@ const donationSchema = new mongoose.Schema(
         street2: String,
         city: String,
         state: String,
-        postalCode: String,
+        postalCode: {
+          type: String,
+          required: true,
+        },
         country: {
           type: String,
           default: "US",
@@ -84,12 +87,12 @@ const donationSchema = new mongoose.Schema(
     stripePaymentIntentId: {
       type: String,
       unique: true,
-      sparse: true, // Allows null values while maintaining uniqueness
+      sparse: true,
     },
 
     stripeCustomerId: String,
-    stripeSubscriptionId: String, // For recurring donations
-    stripeInvoiceId: String, // For recurring donations
+    stripeSubscriptionId: String,
+    stripeInvoiceId: String,
 
     // Transaction Details
     netAmount: {
@@ -245,9 +248,7 @@ donationSchema.statics.getMinistryStats = async function (ministry) {
   ]);
 };
 
-// Add pagination plugin
 donationSchema.plugin(mongoosePaginate);
 
 const Donation = mongoose.model("Donation", donationSchema);
-
 module.exports = { Donation };
