@@ -28,10 +28,18 @@ const validate = (schema, property = "body") => {
 const schemas = {
   // Donation validation
   createDonation: Joi.object({
-    campaignId: Joi.string()
+    ministry: Joi.string()
       .required()
-      .regex(/^[0-9a-fA-F]{24}$/)
-      .message("Campaign ID must be a valid MongoDB ObjectId"),
+      .valid(
+        "Holiday Homes",
+        "Clean Water Initiative",
+        "Workplace Ministry",
+        "Lish AI Labs",
+        "Upendo Academy"
+      )
+      .messages({
+        "any.only": "Please select a valid ministry initiative",
+      }),
 
     amount: Joi.number()
       .required()
@@ -50,13 +58,14 @@ const schemas = {
       email: Joi.string().required().email().lowercase(),
       phone: Joi.string()
         .optional()
-        .pattern(/^[\+]?[\d\s\-\(\)]+$/),
+        .pattern(/^[\+]?[\d\s\-\(\)]+$/)
+        .allow(""),
       address: Joi.object({
-        street: Joi.string().optional(),
-        street2: Joi.string().optional(),
-        city: Joi.string().optional(),
-        state: Joi.string().optional(),
-        postalCode: Joi.string().optional(),
+        street: Joi.string().optional().allow(""),
+        street2: Joi.string().optional().allow(""),
+        city: Joi.string().optional().allow(""),
+        state: Joi.string().optional().allow(""),
+        postalCode: Joi.string().required().min(3).max(20),
         country: Joi.string().default("US").uppercase(),
       }).optional(),
     }).required(),
@@ -69,7 +78,7 @@ const schemas = {
     }),
 
     isAnonymous: Joi.boolean().default(false),
-    message: Joi.string().optional().max(1000),
+    message: Joi.string().optional().max(1000).allow(""),
 
     dedicationType: Joi.string()
       .valid("in_honor", "in_memory", "none")
@@ -85,14 +94,20 @@ const schemas = {
   // Confirm donation validation
   confirmDonation: Joi.object({
     paymentIntentId: Joi.string().required().pattern(/^pi_/),
-    campaignId: Joi.string()
+    ministry: Joi.string()
       .required()
-      .regex(/^[0-9a-fA-F]{24}$/),
+      .valid(
+        "Holiday Homes",
+        "Clean Water Initiative",
+        "Workplace Ministry",
+        "Lish AI Labs",
+        "Upendo Academy"
+      ),
     donorInfo: Joi.object({
       firstName: Joi.string().required().trim().max(50),
       lastName: Joi.string().required().trim().max(50),
       email: Joi.string().required().email().lowercase(),
-      phone: Joi.string().optional(),
+      phone: Joi.string().optional().allow(""),
       address: Joi.object().optional(),
     }).required(),
     amount: Joi.number().required().min(1).max(100000),
@@ -100,29 +115,7 @@ const schemas = {
       .valid("USD", "EUR", "GBP", "CAD", "AUD")
       .default("USD"),
     isRecurring: Joi.boolean().default(false),
-    message: Joi.string().optional().max(1000),
-  }),
-
-  // Campaign query validation
-  campaignQuery: Joi.object({
-    page: Joi.number().integer().min(1).default(1),
-    limit: Joi.number().integer().min(1).max(100).default(10),
-    category: Joi.string()
-      .valid(
-        "education",
-        "healthcare",
-        "infrastructure",
-        "emergency",
-        "missions",
-        "youth",
-        "general"
-      )
-      .optional(),
-    status: Joi.string()
-      .valid("active", "completed", "paused", "draft")
-      .optional(),
-    sort: Joi.string().optional(),
-    search: Joi.string().optional().max(100),
+    message: Joi.string().optional().max(1000).allow(""),
   }),
 
   // Donation query validation
@@ -139,8 +132,14 @@ const schemas = {
         "refunded"
       )
       .optional(),
-    campaignId: Joi.string()
-      .regex(/^[0-9a-fA-F]{24}$/)
+    ministry: Joi.string()
+      .valid(
+        "Holiday Homes",
+        "Clean Water Initiative",
+        "Workplace Ministry",
+        "Lish AI Labs",
+        "Upendo Academy"
+      )
       .optional(),
     startDate: Joi.date().optional(),
     endDate: Joi.date().min(Joi.ref("startDate")).optional(),
@@ -153,16 +152,6 @@ const schemas = {
       .required()
       .regex(/^[0-9a-fA-F]{24}$/)
       .message("ID must be a valid MongoDB ObjectId"),
-  }),
-
-  // Slug parameter validation
-  slug: Joi.object({
-    slug: Joi.string()
-      .required()
-      .pattern(/^[a-z0-9-]+$/)
-      .message(
-        "Slug must contain only lowercase letters, numbers, and hyphens"
-      ),
   }),
 };
 
