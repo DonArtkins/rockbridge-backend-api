@@ -3,10 +3,7 @@ const logger = require("../utils/logger");
 
 const connectDB = async () => {
   try {
-    const mongoURI =
-      process.env.NODE_ENV === "test"
-        ? process.env.MONGODB_URI_TEST
-        : process.env.MONGODB_URI;
+    const mongoURI = process.env.MONGODB_URI;
 
     if (!mongoURI) {
       throw new Error("MongoDB URI not provided in environment variables");
