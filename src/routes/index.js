@@ -8,14 +8,12 @@ const paymentRoutes = require("./payments");
 const webhookRoutes = require("./webhooks");
 const healthRoutes = require("./health");
 
-// Health check routes (no /api prefix)
-router.use("/health", healthRoutes);
-
 // API routes with /api prefix
 router.use("/api/campaigns", campaignRoutes);
 router.use("/api/donations", donationRoutes);
 router.use("/api/payments", paymentRoutes);
 router.use("/api/webhooks", webhookRoutes);
+router.use("/api/health", healthRoutes);
 
 // API root endpoint
 router.get("/api", (req, res) => {
@@ -28,7 +26,7 @@ router.get("/api", (req, res) => {
       donations: "/api/donations",
       payments: "/api/payments",
       webhooks: "/api/webhooks",
-      health: "/health",
+      health: "/api/health",
     },
   });
 });

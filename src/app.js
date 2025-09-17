@@ -53,7 +53,7 @@ app.use(cors(corsConfig));
 app.use(requestLogger);
 
 // Health check endpoint (before rate limiting for monitoring)
-app.get("/health", (req, res) => {
+app.get("/api/health", (req, res) => {
   res.status(200).json({
     status: "healthy",
     timestamp: new Date().toISOString(),
@@ -73,7 +73,7 @@ app.get("/", (req, res) => {
     version: "1.0.0",
     status: "active",
     endpoints: {
-      health: "/health",
+      health: "/api/health",
       api: "/api",
       docs: "/api/docs",
     },
@@ -86,7 +86,7 @@ app.use("*", (req, res) => {
     success: false,
     message: `Route ${req.originalUrl} not found`,
     availableRoutes: [
-      "GET /health",
+      "GET /api/health",
       "GET /api/campaigns",
       "POST /api/donations/intent",
       "POST /api/donations/confirm",
