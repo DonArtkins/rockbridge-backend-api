@@ -185,6 +185,22 @@ class DonationController {
     }
   }
 
+  // Get all donations with filtering and pagination
+  async getDonations(req, res, next) {
+    try {
+      const { page = 1, limit = 10, ...filters } = req.query;
+      const options = { page: parseInt(page), limit: parseInt(limit) };
+      const result = await donationService.getDonations(filters, options);
+
+      res.status(HTTP_STATUS.OK).json({
+        success: true,
+        data: result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   // Get donation analytics
   async getDonationAnalytics(req, res, next) {
     try {
