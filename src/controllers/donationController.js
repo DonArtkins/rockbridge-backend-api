@@ -1,4 +1,4 @@
-const { Donation, Donor } = require("../models");
+const { Donation } = require("../models");
 const stripeService = require("../services/stripeService");
 const emailService = require("../services/emailService");
 const { HTTP_STATUS, MESSAGES, PAYMENT_STATUS } = require("../utils/constants");
@@ -9,7 +9,13 @@ class DonationController {
   // Create donation intent (Step 1: Prepare payment)
   async createDonationIntent(req, res, next) {
     try {
-      const { ministry, amount, currency, donorInfo, isRecurring } = req.body;
+      const {
+        ministry,
+        amount,
+        currency = "USD",
+        donorInfo,
+        isRecurring = false,
+      } = req.body;
 
       // Validate ministry initiative exists
       const validMinistries = [
@@ -93,9 +99,6 @@ class DonationController {
       const donation = new Donation(donationData);
       await donation.save();
 
-      // Create or update donor record
-      await this.createOrUpdateDonor(donation);
-
       // Send confirmation emails asynchronously
       setImmediate(async () => {
         try {
@@ -116,7 +119,7 @@ class DonationController {
 
       res.status(HTTP_STATUS.CREATED).json({
         success: true,
-        message: MESSAGES.SUCCESS.DONATION_CREATED,
+        message: "Donation processed successfully",
         data: {
           donationId: donation._id,
           amount: donation.amount,
@@ -127,39 +130,6 @@ class DonationController {
     } catch (error) {
       logger.error("Error confirming donation:", error);
       next(error);
-    }
-  }
-
-  // Create or update donor helper method
-  async createOrUpdateDonor(donation) {
-    try {
-      const donor = await Donor.findOneAndUpdate(
-        { email: donation.donorInfo.email },
-        {
-          $set: {
-            firstName: donation.donorInfo.firstName,
-            lastName: donation.donorInfo.lastName,
-            phone: donation.donorInfo.phone,
-            address: donation.donorInfo.address,
-          },
-          $setOnInsert: {
-            email: donation.donorInfo.email,
-            preferredCurrency: donation.currency,
-          },
-        },
-        {
-          upsert: true,
-          new: true,
-        }
-      );
-
-      // Update donor statistics
-      await donor.updateStats(donation.amount);
-
-      return donor;
-    } catch (error) {
-      logger.error("Error creating/updating donor:", error);
-      throw error;
     }
   }
 
@@ -186,61 +156,45 @@ class DonationController {
     }
   }
 
-  // Get donations with filtering (admin only)
-  async getDonations(req, res, next) {
+  // Get recent donations (for public display)
+  async getRecentDonations(req, res, next) {
     try {
-      const {
-        page = 1,
-        limit = 10,
-        status,
-        ministry,
-        startDate,
-        endDate,
-        sort = "-createdAt",
-      } = req.query;
+      const { limit = 10, ministry } = req.query;
 
-      // Build filter object
-      const filter = {};
-
-      if (status) filter.paymentStatus = status;
-      if (ministry) filter.ministry = ministry;
-
-      if (startDate || endDate) {
-        filter.createdAt = {};
-        if (startDate) filter.createdAt.$gte = new Date(startDate);
-        if (endDate) filter.createdAt.$lte = new Date(endDate);
-      }
-
-      // Parse sort parameter
-      const sortObj = {};
-      const sortFields = sort.split(",");
-      sortFields.forEach((field) => {
-        const trimmed = field.trim();
-        if (trimmed.startsWith("-")) {
-          sortObj[trimmed.substring(1)] = -1;
-        } else {
-          sortObj[trimmed] = 1;
-        }
-      });
-
-      const options = {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        sort: sortObj,
+      const filter = {
+        paymentStatus: PAYMENT_STATUS.SUCCEEDED,
+        isAnonymous: false,
       };
 
-      const result = await Donation.paginate(filter, options);
+      if (ministry) filter.ministry = ministry;
+
+      const donations = await Donation.find(filter)
+        .sort({ createdAt: -1 })
+        .limit(parseInt(limit))
+        .select(
+          "donorInfo.firstName donorInfo.lastName amount currency message createdAt ministry"
+        )
+        .lean();
 
       res.status(HTTP_STATUS.OK).json({
         success: true,
-        data: {
-          donations: result.docs,
-          pagination: getPaginationInfo(
-            result.page,
-            result.limit,
-            result.totalDocs
-          ),
-        },
+        data: { donations },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Get all donations with filtering and pagination
+  async getDonations(req, res, next) {
+    try {
+      const { page = 1, limit = 10, ...filters } = req.query;
+      const options = { page: parseInt(page), limit: parseInt(limit) };
+      const result = await donationService.getDonations(filters, options);
+
+      res.status(HTTP_STATUS.OK).json({
+        success: true,
+        data: result,
       });
     } catch (error) {
       next(error);
@@ -277,12 +231,6 @@ class DonationController {
             uniqueDonors: { $addToSet: "$donorInfo.email" },
             recurringDonations: {
               $sum: { $cond: ["$isRecurring", 1, 0] },
-            },
-            ministryStats: {
-              $push: {
-                ministry: "$ministry",
-                amount: "$amount",
-              },
             },
           },
         },
@@ -338,35 +286,6 @@ class DonationController {
           },
           ministryStats,
         },
-      });
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  // Get recent donations (for public display)
-  async getRecentDonations(req, res, next) {
-    try {
-      const { limit = 10, ministry } = req.query;
-
-      const filter = {
-        paymentStatus: PAYMENT_STATUS.SUCCEEDED,
-        isAnonymous: false,
-      };
-
-      if (ministry) filter.ministry = ministry;
-
-      const donations = await Donation.find(filter)
-        .sort({ createdAt: -1 })
-        .limit(parseInt(limit))
-        .select(
-          "donorInfo.firstName donorInfo.lastName amount currency message createdAt ministry"
-        )
-        .lean();
-
-      res.status(HTTP_STATUS.OK).json({
-        success: true,
-        data: { donations },
       });
     } catch (error) {
       next(error);

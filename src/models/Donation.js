@@ -4,7 +4,7 @@ const { PAYMENT_STATUS } = require("../utils/constants");
 
 const donationSchema = new mongoose.Schema(
   {
-    // Ministry Initiative (removed campaignId dependency)
+    // Ministry Initiative
     ministry: {
       type: String,
       required: true,
@@ -42,20 +42,9 @@ const donationSchema = new mongoose.Schema(
         type: String,
         trim: true,
       },
-      address: {
-        street: String,
-        street2: String,
-        city: String,
-        state: String,
-        postalCode: {
-          type: String,
-          required: true,
-        },
-        country: {
-          type: String,
-          default: "US",
-          uppercase: true,
-        },
+      postalCode: {
+        type: String,
+        required: true,
       },
     },
 
@@ -71,7 +60,6 @@ const donationSchema = new mongoose.Schema(
       type: String,
       required: true,
       uppercase: true,
-      enum: ["USD", "EUR", "GBP", "CAD", "AUD"],
       default: "USD",
     },
 
@@ -133,21 +121,6 @@ const donationSchema = new mongoose.Schema(
       trim: true,
     },
 
-    // Dedication
-    dedicationType: {
-      type: String,
-      enum: ["in_honor", "in_memory", "none"],
-      default: "none",
-    },
-
-    dedicationName: {
-      type: String,
-      maxlength: 100,
-      required: function () {
-        return this.dedicationType !== "none";
-      },
-    },
-
     // Processing Status
     processedAt: Date,
     receiptSent: {
@@ -206,46 +179,6 @@ donationSchema.methods.markThankYouSent = function () {
 
 donationSchema.methods.isSuccessful = function () {
   return this.paymentStatus === PAYMENT_STATUS.SUCCEEDED;
-};
-
-donationSchema.methods.isPending = function () {
-  return this.paymentStatus === PAYMENT_STATUS.PENDING;
-};
-
-donationSchema.methods.isFailed = function () {
-  return [PAYMENT_STATUS.FAILED, PAYMENT_STATUS.CANCELED].includes(
-    this.paymentStatus
-  );
-};
-
-// Static methods
-donationSchema.statics.getMinistryStats = async function (ministry) {
-  return this.aggregate([
-    {
-      $match: {
-        ministry,
-        paymentStatus: PAYMENT_STATUS.SUCCEEDED,
-      },
-    },
-    {
-      $group: {
-        _id: "$ministry",
-        totalAmount: { $sum: "$amount" },
-        totalDonations: { $sum: 1 },
-        avgAmount: { $avg: "$amount" },
-        uniqueDonors: { $addToSet: "$donorInfo.email" },
-      },
-    },
-    {
-      $project: {
-        ministry: "$_id",
-        totalAmount: { $round: ["$totalAmount", 2] },
-        totalDonations: 1,
-        avgAmount: { $round: ["$avgAmount", 2] },
-        uniqueDonorCount: { $size: "$uniqueDonors" },
-      },
-    },
-  ]);
 };
 
 donationSchema.plugin(mongoosePaginate);
