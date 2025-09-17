@@ -1,11 +1,10 @@
 const mongoose = require("mongoose");
-const { Donation, Campaign, Donor } = require("../models");
+const { Donation, Donor } = require("../models");
 const { PAYMENT_STATUS } = require("../utils/constants");
-const { generateReceiptNumber } = require("../utils/helpers");
 const logger = require("../utils/logger");
 
 class DonationService {
-  // Create a new donation
+  // Create a new donation without campaign dependency
   async createDonation(donationData) {
     const session = await mongoose.startSession();
 
@@ -14,18 +13,6 @@ class DonationService {
         // Create donation record
         const donation = new Donation(donationData);
         await donation.save({ session });
-
-        // Update campaign statistics
-        await Campaign.findByIdAndUpdate(
-          donationData.campaignId,
-          {
-            $inc: {
-              raisedAmount: donationData.amount,
-              donorCount: 1,
-            },
-          },
-          { session }
-        );
 
         // Create or update donor record
         const donor = await Donor.findOneAndUpdate(
@@ -54,7 +41,7 @@ class DonationService {
 
         logger.info(`Donation created successfully: ${donation._id}`, {
           donationId: donation._id,
-          campaignId: donationData.campaignId,
+          ministry: donationData.ministry,
           amount: donationData.amount,
           donorEmail: donationData.donorInfo.email,
         });
@@ -83,7 +70,7 @@ class DonationService {
 
       const donationData = {
         donorInfo: existingDonation.donorInfo,
-        campaignId: existingDonation.campaignId,
+        ministry: existingDonation.ministry, // Use ministry instead of campaignId
         amount: invoiceData.amount,
         currency: invoiceData.currency,
         isRecurring: true,
@@ -92,8 +79,9 @@ class DonationService {
         stripeCustomerId: invoiceData.stripeCustomerId,
         stripeInvoiceId: invoiceData.stripeInvoiceId,
         paymentStatus: PAYMENT_STATUS.SUCCEEDED,
-        netAmount: invoiceData.amount, // Assume no fees for simplicity
+        netAmount: invoiceData.amount,
         source: "recurring_webhook",
+        processedAt: new Date(),
       };
 
       return await this.createDonation(donationData);
@@ -159,7 +147,6 @@ class DonationService {
       const { page = 1, limit = 10, sort = { createdAt: -1 } } = options;
 
       const query = Donation.find(filters)
-        .populate("campaignId", "title slug")
         .sort(sort)
         .limit(limit * 1)
         .skip((page - 1) * limit);
@@ -182,20 +169,17 @@ class DonationService {
   // Get donation by ID
   async getDonationById(donationId) {
     try {
-      return await Donation.findById(donationId).populate(
-        "campaignId",
-        "title slug description"
-      );
+      return await Donation.findById(donationId);
     } catch (error) {
       logger.error("Failed to get donation by ID:", error);
       throw error;
     }
   }
 
-  // Get donation analytics
+  // Get donation analytics by ministry
   async getAnalytics(filters = {}) {
     try {
-      const { startDate, endDate, campaignId } = filters;
+      const { startDate, endDate, ministry } = filters;
 
       const matchStage = {
         paymentStatus: PAYMENT_STATUS.SUCCEEDED,
@@ -207,8 +191,8 @@ class DonationService {
         if (endDate) matchStage.createdAt.$lte = new Date(endDate);
       }
 
-      if (campaignId) {
-        matchStage.campaignId = new mongoose.Types.ObjectId(campaignId);
+      if (ministry) {
+        matchStage.ministry = ministry;
       }
 
       const pipeline = [
@@ -257,10 +241,32 @@ class DonationService {
           },
         },
         { $sort: { "_id.year": 1, "_id.month": 1, "_id.day": 1 } },
-        { $limit: 30 }, // Last 30 days
+        { $limit: 30 },
       ];
 
       const trends = await Donation.aggregate(trendsPipeline);
+
+      // Get ministry breakdown
+      const ministryBreakdown = await Donation.aggregate([
+        { $match: matchStage },
+        {
+          $group: {
+            _id: "$ministry",
+            totalAmount: { $sum: "$amount" },
+            totalDonations: { $sum: 1 },
+            avgAmount: { $avg: "$amount" },
+          },
+        },
+        {
+          $project: {
+            ministry: "$_id",
+            totalAmount: { $round: ["$totalAmount", 2] },
+            totalDonations: 1,
+            avgAmount: { $round: ["$avgAmount", 2] },
+          },
+        },
+        { $sort: { totalAmount: -1 } },
+      ]);
 
       return {
         summary: analytics || {
@@ -272,6 +278,7 @@ class DonationService {
           oneTimeDonations: 0,
         },
         trends,
+        ministryBreakdown,
       };
     } catch (error) {
       logger.error("Failed to get donation analytics:", error);
@@ -279,19 +286,19 @@ class DonationService {
     }
   }
 
-  // Get campaign-specific statistics
-  async getCampaignStats(campaignId) {
+  // Get ministry-specific statistics
+  async getMinistryStats(ministry) {
     try {
       const pipeline = [
         {
           $match: {
-            campaignId: new mongoose.Types.ObjectId(campaignId),
+            ministry: ministry,
             paymentStatus: PAYMENT_STATUS.SUCCEEDED,
           },
         },
         {
           $group: {
-            _id: null,
+            _id: "$ministry",
             totalDonations: { $sum: 1 },
             totalAmount: { $sum: "$amount" },
             averageAmount: { $avg: "$amount" },
@@ -305,7 +312,7 @@ class DonationService {
         },
         {
           $project: {
-            _id: 0,
+            ministry: "$_id",
             totalDonations: 1,
             totalAmount: { $round: ["$totalAmount", 2] },
             averageAmount: { $round: ["$averageAmount", 2] },
@@ -322,9 +329,9 @@ class DonationService {
 
       const [stats] = await Donation.aggregate(pipeline);
 
-      // Get recent donations for this campaign
+      // Get recent donations for this ministry
       const recentDonations = await Donation.find({
-        campaignId: new mongoose.Types.ObjectId(campaignId),
+        ministry: ministry,
         paymentStatus: PAYMENT_STATUS.SUCCEEDED,
         isAnonymous: false,
       })
@@ -337,6 +344,7 @@ class DonationService {
 
       return {
         stats: stats || {
+          ministry,
           totalDonations: 0,
           totalAmount: 0,
           averageAmount: 0,
@@ -349,7 +357,7 @@ class DonationService {
         recentDonations,
       };
     } catch (error) {
-      logger.error("Failed to get campaign stats:", error);
+      logger.error("Failed to get ministry stats:", error);
       throw error;
     }
   }
@@ -372,7 +380,7 @@ class DonationService {
             averageAmount: { $avg: "$amount" },
             firstDonation: { $min: "$createdAt" },
             lastDonation: { $max: "$createdAt" },
-            campaigns: { $addToSet: "$campaignId" },
+            ministries: { $addToSet: "$ministry" },
           },
         },
       ];
