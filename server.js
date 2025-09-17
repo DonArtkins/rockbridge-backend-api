@@ -27,7 +27,7 @@ const startServer = async () => {
     const server = app.listen(PORT, () => {
       logger.info(`🚀 Rockbridge API Server running on port ${PORT}`);
       logger.info(`📖 Environment: ${process.env.NODE_ENV}`);
-      logger.info(`🔗 Health Check: ${APP_URL}/api/health`);
+      logger.info(`🔗 Health Check: ${process.env.APP_URL}/api/health`);
     });
 
     // Graceful shutdown
