@@ -6,9 +6,9 @@ const mongoSanitize = require("express-mongo-sanitize");
 
 // Import middlewares
 const { requestLogger } = require("./middlewares/logging");
-const corsConfig = require("./middlewares/cors");
-const errorHandler = require("./middlewares/errorHandler");
-const securityMiddleware = require("./middlewares/security");
+const { corsConfig } = require("./middlewares/cors");
+const { errorHandler } = require("./middlewares/errorHandler");
+const { securityMiddleware } = require("./middlewares/security");
 
 // Import routes
 const routes = require("./routes");
