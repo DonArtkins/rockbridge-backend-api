@@ -1,9 +1,5 @@
-const Campaign = require("./Campaign");
-const Donation = require("./Donation");
-const Donor = require("./Donor");
+const { Donation } = require("./Donation");
 
 module.exports = {
-  Campaign,
   Donation,
-  Donor,
 };

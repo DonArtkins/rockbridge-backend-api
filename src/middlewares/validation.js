@@ -60,14 +60,7 @@ const schemas = {
         .optional()
         .pattern(/^[\+]?[\d\s\-\(\)]+$/)
         .allow(""),
-      address: Joi.object({
-        street: Joi.string().optional().allow(""),
-        street2: Joi.string().optional().allow(""),
-        city: Joi.string().optional().allow(""),
-        state: Joi.string().optional().allow(""),
-        postalCode: Joi.string().required().min(3).max(20),
-        country: Joi.string().default("US").uppercase(),
-      }).optional(),
+      postalCode: Joi.string().required().min(3).max(20),
     }).required(),
 
     isRecurring: Joi.boolean().default(false),
@@ -79,16 +72,6 @@ const schemas = {
 
     isAnonymous: Joi.boolean().default(false),
     message: Joi.string().optional().max(1000).allow(""),
-
-    dedicationType: Joi.string()
-      .valid("in_honor", "in_memory", "none")
-      .default("none"),
-
-    dedicationName: Joi.when("dedicationType", {
-      is: Joi.valid("in_honor", "in_memory"),
-      then: Joi.string().required().max(100),
-      otherwise: Joi.forbidden(),
-    }),
   }),
 
   // Confirm donation validation
@@ -108,7 +91,7 @@ const schemas = {
       lastName: Joi.string().required().trim().max(50),
       email: Joi.string().required().email().lowercase(),
       phone: Joi.string().optional().allow(""),
-      address: Joi.object().optional(),
+      postalCode: Joi.string().required(),
     }).required(),
     amount: Joi.number().required().min(1).max(100000),
     currency: Joi.string()
@@ -116,34 +99,6 @@ const schemas = {
       .default("USD"),
     isRecurring: Joi.boolean().default(false),
     message: Joi.string().optional().max(1000).allow(""),
-  }),
-
-  // Donation query validation
-  donationQuery: Joi.object({
-    page: Joi.number().integer().min(1).default(1),
-    limit: Joi.number().integer().min(1).max(100).default(10),
-    status: Joi.string()
-      .valid(
-        "pending",
-        "processing",
-        "succeeded",
-        "failed",
-        "canceled",
-        "refunded"
-      )
-      .optional(),
-    ministry: Joi.string()
-      .valid(
-        "Holiday Homes",
-        "Clean Water Initiative",
-        "Workplace Ministry",
-        "Lish AI Labs",
-        "Upendo Academy"
-      )
-      .optional(),
-    startDate: Joi.date().optional(),
-    endDate: Joi.date().min(Joi.ref("startDate")).optional(),
-    sort: Joi.string().optional(),
   }),
 
   // ID parameter validation

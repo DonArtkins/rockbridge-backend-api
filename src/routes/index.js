@@ -2,41 +2,25 @@ const express = require("express");
 const router = express.Router();
 
 // Import route modules
-const campaignRoutes = require("./campaigns");
 const donationRoutes = require("./donations");
-const paymentRoutes = require("./payments");
 const webhookRoutes = require("./webhooks");
 const healthRoutes = require("./health");
 
-// API routes with /api prefix
-router.use("/api/campaigns", campaignRoutes);
-router.use("/api/donations", donationRoutes);
-router.use("/api/payments", paymentRoutes);
-router.use("/api/webhooks", webhookRoutes);
-router.use("/api/health", healthRoutes);
+// Mount routes WITHOUT /api prefix (it's added in app.js)
+router.use("/donations", donationRoutes);
+router.use("/webhooks", webhookRoutes);
+router.use("/health", healthRoutes);
 
 // API root endpoint
-router.get("/api", (req, res) => {
+router.get("/", (req, res) => {
   res.json({
     message: "Rockbridge Ministries Donations API",
     version: "1.0.0",
-    documentation: "/api-docs",
     endpoints: {
-      campaigns: "/api/campaigns",
       donations: "/api/donations",
-      payments: "/api/payments",
       webhooks: "/api/webhooks",
       health: "/api/health",
     },
-  });
-});
-
-// Catch 404 for API routes
-router.use("/api/*", (req, res) => {
-  res.status(404).json({
-    success: false,
-    message: "API endpoint not found",
-    path: req.originalUrl,
   });
 });
 
