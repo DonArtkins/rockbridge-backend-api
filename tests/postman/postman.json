@@ -9,12 +9,6 @@
       "key": "baseUrl",
       "value": "http://localhost:5000",
       "type": "string"
-    },
-    {
-      "key": "adminToken",
-      "value": "",
-      "type": "string",
-      "description": "JWT token for admin authentication"
     }
   ],
   "item": [
@@ -32,74 +26,17 @@
       "response": []
     },
     {
-      "name": "Campaigns",
-      "item": [
-        {
-          "name": "Get All Campaigns",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/campaigns",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "campaigns"]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Get Campaign by Slug",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/campaigns/education-for-all",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "campaigns", "education-for-all"]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Get Campaign Stats",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/campaigns/{{campaignId}}/stats",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "campaigns", "{{campaignId}}", "stats"]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Create Campaign (Admin)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{adminToken}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"title\": \"Education for All\",\n  \"slug\": \"education-for-all\",\n  \"description\": \"Providing education to underprivileged children in rural areas\",\n  \"shortDescription\": \"Education for underprivileged children\",\n  \"goalAmount\": 50000,\n  \"currency\": \"USD\",\n  \"featuredImage\": \"https://example.com/image.jpg\",\n  \"category\": \"education\",\n  \"status\": \"active\",\n  \"startDate\": \"2024-01-01\",\n  \"endDate\": \"2024-12-31\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/campaigns",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "campaigns"]
-            }
-          },
-          "response": []
+      "name": "API Root",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api",
+          "host": ["{{baseUrl}}"],
+          "path": ["api"]
         }
-      ]
+      },
+      "response": []
     },
     {
       "name": "Donations",
@@ -116,7 +53,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"campaignId\": \"{{campaignId}}\",\n  \"amount\": 50.00,\n  \"currency\": \"USD\",\n  \"donorInfo\": {\n    \"firstName\": \"John\",\n    \"lastName\": \"Doe\",\n    \"email\": \"john.doe@example.com\",\n    \"phone\": \"+1234567890\",\n    \"address\": {\n      \"street\": \"123 Main St\",\n      \"city\": \"Anytown\",\n      \"state\": \"CA\",\n      \"postalCode\": \"12345\",\n      \"country\": \"US\"\n    }\n  },\n  \"isRecurring\": false,\n  \"message\": \"God bless this mission!\"\n}"
+              "raw": "{\n  \"ministry\": \"Clean Water Initiative\",\n  \"amount\": 50.00,\n  \"currency\": \"USD\",\n  \"donorInfo\": {\n    \"firstName\": \"John\",\n    \"lastName\": \"Doe\",\n    \"email\": \"john.doe@example.com\",\n    \"phone\": \"+1234567890\",\n    \"postalCode\": \"12345\"\n  },\n  \"isRecurring\": false,\n  \"message\": \"God bless this mission!\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/donations/intent",
@@ -138,7 +75,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"paymentIntentId\": \"{{paymentIntentId}}\",\n  \"campaignId\": \"{{campaignId}}\",\n  \"donorInfo\": {\n    \"firstName\": \"John\",\n    \"lastName\": \"Doe\",\n    \"email\": \"john.doe@example.com\",\n    \"phone\": \"+1234567890\"\n  },\n  \"amount\": 50.00,\n  \"currency\": \"USD\"\n}"
+              "raw": "{\n  \"paymentIntentId\": \"{{paymentIntentId}}\",\n  \"ministry\": \"Clean Water Initiative\",\n  \"donorInfo\": {\n    \"firstName\": \"John\",\n    \"lastName\": \"Doe\",\n    \"email\": \"john.doe@example.com\",\n    \"phone\": \"+1234567890\",\n    \"postalCode\": \"12345\"\n  },\n  \"amount\": 50.00,\n  \"currency\": \"USD\",\n  \"isRecurring\": false\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/donations/confirm",
@@ -162,15 +99,29 @@
           "response": []
         },
         {
-          "name": "Get All Donations (Admin)",
+          "name": "Get Recent Donations",
           "request": {
             "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{adminToken}}"
-              }
-            ],
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/donations/recent?limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "donations", "recent"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Donations",
+          "request": {
+            "method": "GET",
+            "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/donations?page=1&limit=10",
               "host": ["{{baseUrl}}"],
@@ -190,19 +141,14 @@
           "response": []
         },
         {
-          "name": "Get Donation Analytics (Admin)",
+          "name": "Get Donation Analytics",
           "request": {
             "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{adminToken}}"
-              }
-            ],
+            "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/donations/analytics?startDate=2024-01-01&endDate=2024-01-31",
+              "raw": "{{baseUrl}}/api/donations/analytics/summary?startDate=2024-01-01&endDate=2024-01-31",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "donations", "analytics"],
+              "path": ["api", "donations", "analytics", "summary"],
               "query": [
                 {
                   "key": "startDate",
@@ -213,33 +159,6 @@
                   "value": "2024-01-31"
                 }
               ]
-            }
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "Authentication",
-      "item": [
-        {
-          "name": "Admin Login",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"email\": \"admin@rockbridgeministries.org\",\n  \"password\": \"adminpassword\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/auth/login",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "auth", "login"]
             }
           },
           "response": []
@@ -265,7 +184,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"id\": \"evt_1P9h9o2eZvKYlo2CJZ6mYzB7\",\n  \"object\": \"event\",\n  \"api_version\": \"2023-10-16\",\n  \"created\": 1705343683,\n  \"data\": {\n    \"object\": {\n      \"id\": \"pi_3P9h9o2eZvKYlo2C1rFJ7sJX\",\n      \"object\": \"payment_intent\",\n      \"amount\": 5000,\n      \"amount_capturable\": 0,\n      \"amount_received\": 5000,\n      \"application\": null,\n      \"application_fee_amount\": null,\n      \"automatic_payment_methods\": null,\n      \"canceled_at\": null,\n      \"cancellation_reason\": null,\n      \"capture_method\": \"automatic\",\n      \"client_secret\": \"pi_3P9h9o2eZvKYlo2C1rFJ7sJX_secret_xyz\",\n      \"confirmation_method\": \"automatic\",\n      \"created\": 1705343683,\n      \"currency\": \"usd\",\n      \"customer\": \"cus_P9h9o2eZvKYlo2C\",\n      \"description\": \"Donation for Education for All campaign\",\n      \"invoice\": null,\n      \"last_payment_error\": null,\n      \"livemode\": false,\n      \"metadata\": {\n        \"campaignId\": \"{{campaignId}}\",\n        \"donorEmail\": \"john.doe@example.com\",\n        \"donorName\": \"John Doe\"\n      },\n      \"next_action\": null,\n      \"on_behalf_of\": null,\n      \"payment_method\": \"pm_1P9h9o2eZvKYlo2CJZ6mYzB7\",\n      \"payment_method_options\": {\n        \"card\": {\n          \"installments\": null,\n          \"mandate_options\": null,\n          \"network\": null,\n          \"request_three_d_secure\": \"automatic\"\n        }\n      },\n      \"payment_method_types\": [\n        \"card\"\n      ],\n      \"processing\": null,\n      \"receipt_email\": \"john.doe@example.com\",\n      \"review\": null,\n      \"setup_future_usage\": null,\n      \"shipping\": null,\n      \"source\": null,\n      \"statement_descriptor\": \"ROCKBRIDGE MINISTRIES\",\n      \"statement_descriptor_suffix\": null,\n      \"status\": \"succeeded\",\n      \"transfer_data\": null,\n      \"transfer_group\": null\n    }\n  },\n  \"livemode\": false,\n  \"pending_webhooks\": 1,\n  \"request\": {\n    \"id\": \"req_P9h9o2eZvKYlo2C\",\n    \"idempotency_key\": \"a1b2c3d4-e5f6-7890-g1h2-i3j4k5l6m7n8\"\n  },\n  \"type\": \"payment_intent.succeeded\"\n}"
+              "raw": "{\n  \"id\": \"evt_1P9h9o2eZvKYlo2CJZ6mYzB7\",\n  \"object\": \"event\",\n  \"api_version\": \"2023-10-16\",\n  \"created\": 1705343683,\n  \"data\": {\n    \"object\": {\n      \"id\": \"pi_3P9h9o2eZvKYlo2C1rFJ7sJX\",\n      \"object\": \"payment_intent\",\n      \"amount\": 5000,\n      \"amount_capturable\": 0,\n      \"amount_received\": 5000,\n      \"application\": null,\n      \"application_fee_amount\": null,\n      \"automatic_payment_methods\": null,\n      \"canceled_at\": null,\n      \"cancellation_reason\": null,\n      \"capture_method\": \"automatic\",\n      \"client_secret\": \"pi_3P9h9o2eZvKYlo2C1rFJ7sJX_secret_xyz\",\n      \"confirmation_method\": \"automatic\",\n      \"created\": 1705343683,\n      \"currency\": \"usd\",\n      \"customer\": \"cus_P9h9o2eZvKYlo2C\",\n      \"description\": \"Donation for Clean Water Initiative\",\n      \"invoice\": null,\n      \"last_payment_error\": null,\n      \"livemode\": false,\n      \"metadata\": {\n        \"ministry\": \"Clean Water Initiative\",\n        \"donorEmail\": \"john.doe@example.com\",\n        \"donorName\": \"John Doe\",\n        \"isRecurring\": \"false\"\n      },\n      \"next_action\": null,\n      \"on_behalf_of\": null,\n      \"payment_method\": \"pm_1P9h9o2eZvKYlo2CJZ6mYzB7\",\n      \"payment_method_options\": {\n        \"card\": {\n          \"installments\": null,\n          \"mandate_options\": null,\n          \"network\": null,\n          \"request_three_d_secure\": \"automatic\"\n        }\n      },\n      \"payment_method_types\": [\n        \"card\"\n      ],\n      \"processing\": null,\n      \"receipt_email\": \"john.doe@example.com\",\n      \"review\": null,\n      \"setup_future_usage\": null,\n      \"shipping\": null,\n      \"source\": null,\n      \"statement_descriptor\": \"ROCKBRIDGE MINISTRIES\",\n      \"statement_descriptor_suffix\": null,\n      \"status\": \"succeeded\",\n      \"transfer_data\": null,\n      \"transfer_group\": null\n    }\n  },\n  \"livemode\": false,\n  \"pending_webhooks\": 1,\n  \"request\": {\n    \"id\": \"req_P9h9o2eZvKYlo2C\",\n    \"idempotency_key\": \"a1b2c3d4-e5f6-7890-g1h2-i3j4k5l6m7n8\"\n  },\n  \"type\": \"payment_intent.succeeded\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/webhooks/stripe",
@@ -306,25 +225,15 @@
           "    pm.expect(jsonData).to.have.property('stripe');",
           "});",
           "",
-          "// Store campaign ID from response if available",
-          "if (pm.response.code === 200 && pm.response.json().data && pm.response.json().data[0]) {",
-          "    pm.globals.set('campaignId', pm.response.json().data[0]._id);",
-          "    pm.globals.set('campaignSlug', pm.response.json().data[0].slug);",
-          "}",
-          "",
           "// Store payment intent ID from donation intent response",
           "if (pm.response.code === 201 && pm.response.json().data) {",
           "    pm.globals.set('paymentIntentId', pm.response.json().data.paymentIntentId);",
+          "    pm.globals.set('ministry', pm.response.json().data.ministry);",
           "}",
           "",
           "// Store donation ID from confirm donation response",
           "if (pm.response.code === 201 && pm.response.json().data) {",
           "    pm.globals.set('donationId', pm.response.json().data.donationId);",
-          "}",
-          "",
-          "// Store admin token from login response",
-          "if (pm.response.code === 200 && pm.response.json().data) {",
-          "    pm.globals.set('adminToken', pm.response.json().data.token);",
           "}"
         ],
         "type": "text/javascript"
