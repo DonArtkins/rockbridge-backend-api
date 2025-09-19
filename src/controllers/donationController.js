@@ -57,7 +57,8 @@ class DonationController {
           donorEmail: donorInfo.email,
           donorName: `${donorInfo.firstName} ${donorInfo.lastName}`,
           isRecurring: isRecurring.toString(),
-        }
+        },
+        isRecurring
       );
 
       logger.info(`Payment intent created: ${paymentIntent.id}`, {
