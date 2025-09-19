@@ -33,9 +33,24 @@ class DonationController {
         });
       }
 
-      // Create payment intent with Stripe
+      // Convert amount from cents to dollars if it's already in cents
+      let amountInDollars = amount;
+      if (amount > 100000) {
+        // If amount is greater than 100k, it's likely in cents, convert to dollars
+        amountInDollars = Math.round(amount / 100);
+      }
+
+      // Validate converted amount
+      if (amountInDollars < 1 || amountInDollars > 100000) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({
+          success: false,
+          message: "Amount must be between $1 and $100,000",
+        });
+      }
+
+      // Create payment intent with Stripe (amount in dollars)
       const paymentIntent = await stripeService.createPaymentIntent(
-        amount,
+        amountInDollars,
         currency,
         {
           ministry: ministry,
@@ -47,7 +62,7 @@ class DonationController {
 
       logger.info(`Payment intent created: ${paymentIntent.id}`, {
         ministry,
-        amount,
+        amount: amountInDollars,
         currency,
         donorEmail: donorInfo.email,
       });
@@ -71,6 +86,13 @@ class DonationController {
     try {
       const { paymentIntentId } = req.body;
 
+      if (!paymentIntentId || !paymentIntentId.startsWith("pi_")) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({
+          success: false,
+          message: "Invalid payment intent ID",
+        });
+      }
+
       // Verify payment with Stripe
       const paymentIntent = await stripeService.retrievePaymentIntent(
         paymentIntentId
@@ -84,12 +106,16 @@ class DonationController {
         });
       }
 
+      // Convert amount from cents to dollars for storage
+      const amountInDollars = paymentIntent.amount / 100;
+
       // Create donation record
       const donationData = {
         ...req.body,
+        amount: amountInDollars, // Store in dollars
         stripePaymentIntentId: paymentIntentId,
         paymentStatus: PAYMENT_STATUS.SUCCEEDED,
-        netAmount: paymentIntent.amount / 100,
+        netAmount: amountInDollars,
         transactionFee: (paymentIntent.application_fee_amount || 0) / 100,
         processedAt: new Date(),
         ipAddress: req.ip,
