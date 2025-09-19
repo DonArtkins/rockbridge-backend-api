@@ -12,6 +12,8 @@ class StripeService {
         automatic_payment_methods: {
           enabled: true,
         },
+        // IMPORTANT: Match the setup_future_usage with Elements configuration
+        setup_future_usage: "off_session",
         // Add receipt email if available
         ...(metadata.donorEmail && { receipt_email: metadata.donorEmail }),
       });
