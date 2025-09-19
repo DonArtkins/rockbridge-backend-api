@@ -3,21 +3,26 @@ const logger = require("../utils/logger");
 
 class StripeService {
   // Create payment intent for one-time donation
-  async createPaymentIntent(amount, currency, metadata) {
+  async createPaymentIntent(amount, currency, metadata, isRecurring = false) {
     try {
-      const paymentIntent = await stripe.paymentIntents.create({
-        amount: Math.round(amount * 100), // Convert to cents
+      const paymentIntentData = {
+        amount: Math.round(amount * 100),
         currency: currency.toLowerCase(),
         metadata,
         automatic_payment_methods: {
           enabled: true,
         },
-        // IMPORTANT: Match the setup_future_usage with Elements configuration
-        setup_future_usage: "off_session",
-        // Add receipt email if available
         ...(metadata.donorEmail && { receipt_email: metadata.donorEmail }),
-      });
+      };
 
+      // Only add setup_future_usage for recurring payments
+      if (isRecurring) {
+        paymentIntentData.setup_future_usage = "off_session";
+      }
+
+      const paymentIntent = await stripe.paymentIntents.create(
+        paymentIntentData
+      );
       return paymentIntent;
     } catch (error) {
       logger.error("Failed to create payment intent:", error);
